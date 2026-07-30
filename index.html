@@ -824,10 +824,26 @@
 
         function formatCardContent(html) {
             if (!html) return '';
-            if (/<(br|p|div|ul|ol|li)[^>]*>/i.test(html)) {
-                return html;
-            }
-            return escapeHTML(html).replace(/\r?\n/g, '<br>');
+            let str = html;
+
+            // Convert div and p blocks into linebreaks
+            str = str.replace(/<\/div>\s*<div>/gi, '<br>');
+            str = str.replace(/<div[^>]*>/gi, '');
+            str = str.replace(/<\/div>/gi, '<br>');
+            str = str.replace(/<\/p>\s*<p>/gi, '<br><br>');
+            str = str.replace(/<p[^>]*>/gi, '');
+            str = str.replace(/<\/p>/gi, '<br>');
+
+            // Separate bullet points (e.g. - Item, • Item, 1. Item) onto new lines
+            str = str.replace(/([^\n<])(\s*[-•]\s+)/g, '$1<br>$2');
+
+            // Replace plain text \n with <br>
+            str = str.replace(/\r?\n/g, '<br>');
+
+            // Clean up excessive linebreaks
+            str = str.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
+
+            return str;
         }
 
         function openSlideTextModal(lectureId, pageNum, lectureName) {
