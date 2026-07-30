@@ -940,31 +940,50 @@
             document.getElementById('loader').style.opacity = '1';
             document.getElementById('loader-spinner').style.display = 'block';
             document.getElementById('db-pick-label').style.display = 'none';
-            document.getElementById('loader-msg').innerText = "Lade und initialisiere SQLite-WASM...";
+            document.getElementById('loader-msg').innerText = "Initialisiere SQLite-Engine...";
 
             try {
                 const SQL = await sqlPromise;
+                document.getElementById('loader-msg').innerText = `Lese Datei (${Math.round(file.size / 1024)} KB)...`;
+                
                 const reader = new FileReader();
                 reader.onload = async function() {
-                    const uints = new Uint8Array(reader.result);
-                    db = new SQL.Database(uints);
-                    await saveToIndexedDB(reader.result);
-                    
-                    document.getElementById('loader').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('loader').style.display = 'none';
-                        document.getElementById('app-content').style.display = 'block';
-                        document.getElementById('save-db-btn').disabled = false;
-                        loadDashboard();
-                        loadUnits();
-                    }, 300);
+                    try {
+                        document.getElementById('loader-msg').innerText = "Lade Tabellen in den Speicher...";
+                        const uints = new Uint8Array(reader.result);
+                        
+                        db = new SQL.Database(uints);
+                        await saveToIndexedDB(reader.result);
+                        
+                        document.getElementById('loader').style.opacity = '0';
+                        setTimeout(() => {
+                            document.getElementById('loader').style.display = 'none';
+                            document.getElementById('app-content').style.display = 'block';
+                            document.getElementById('save-db-btn').disabled = false;
+                            loadDashboard();
+                            loadUnits();
+                            showToast("Datenbank erfolgreich geladen!");
+                        }, 300);
+                    } catch (dbErr) {
+                        console.error("SQLite Init Error:", dbErr);
+                        alert("Fehler beim Öffnen der SQLite-Datenbank: " + dbErr.message + "\n\nIst die Datei beschädigt?");
+                        document.getElementById('loader-spinner').style.display = 'none';
+                        document.getElementById('db-pick-label').style.display = 'inline-flex';
+                        document.getElementById('loader-msg').innerText = "Datenbank-Fehler. Bitte versuche es erneut.";
+                    }
+                };
+                reader.onerror = function(rErr) {
+                    alert("Dateilesefehler auf dem Handy.");
+                    document.getElementById('loader-spinner').style.display = 'none';
+                    document.getElementById('db-pick-label').style.display = 'inline-flex';
                 };
                 reader.readAsArrayBuffer(file);
             } catch (err) {
-                alert("Fehler beim Laden der DB: " + err.message);
+                console.error("SQL.js Init Error:", err);
+                alert("Fehler beim Laden der SQLite-Engine: " + err.message);
                 document.getElementById('loader-spinner').style.display = 'none';
                 document.getElementById('db-pick-label').style.display = 'inline-flex';
-                document.getElementById('loader-msg').innerText = "Dateilesefehler. Bitte versuche es erneut.";
+                document.getElementById('loader-msg').innerText = "Ladefehler. Bitte versuche es erneut.";
             }
         });
 
