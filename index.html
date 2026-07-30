@@ -802,6 +802,17 @@
         </div>
     </div>
 
+    <!-- Slide Text Preview Modal -->
+    <div class="modal" id="slide-modal" style="z-index: 1200;">
+        <div class="modal-content" style="max-width: 550px; padding: 22px; border-radius: 20px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+                <h3 id="slide-modal-title" style="font-size: 1.05rem; font-weight: 700; color: var(--primary);">📄 Folientext</h3>
+                <button class="close-btn" onclick="closeSlideModal()">&times;</button>
+            </div>
+            <div id="slide-modal-text" style="font-size: 0.88rem; color: var(--text-main); line-height: 1.5; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px; max-height: 60vh; overflow-y: auto; white-space: pre-wrap; word-break: break-word;"></div>
+        </div>
+    </div>
+
     <!-- Toast Notice -->
     <div id="toast">Änderungen gespeichert!</div>
 
@@ -810,6 +821,27 @@
         let activeUnitId = null;
         let selectedFile = null;
         let pendingCompletionUnitId = null;
+
+        function formatCardContent(html) {
+            if (!html) return '';
+            if (/<(br|p|div|ul|ol|li)[^>]*>/i.test(html)) {
+                return html;
+            }
+            return escapeHTML(html).replace(/\r?\n/g, '<br>');
+        }
+
+        function openSlideTextModal(lectureId, pageNum, lectureName) {
+            const pageRow = queryDB("SELECT text_content, image_description FROM lecture_pages WHERE lecture_id = ? AND page_number = ?", [lectureId, pageNum])[0];
+            const text = pageRow ? (pageRow.text_content || pageRow.image_description || "Kein Folientext extrahiert.") : "Folientext in der Datenbank nicht gefunden.";
+            
+            document.getElementById('slide-modal-title').innerText = `📄 ${lectureName} (Folie ${pageNum})`;
+            document.getElementById('slide-modal-text').innerText = text;
+            document.getElementById('slide-modal').classList.add('active');
+        }
+
+        function closeSlideModal() {
+            document.getElementById('slide-modal').classList.remove('active');
+        }
 
         // Friendly error handler for OneDrive App preview frame
         window.onerror = function(msg, url, line) {
@@ -1258,7 +1290,7 @@
 
                 // Vorlesungs-Quellen für diese Altfrage abfragen
                 const matches = queryDB(`
-                    SELECT l.filename as lecture_name, cpm.page_number, cpm.confidence_score
+                    SELECT l.id as lecture_id, l.filename as lecture_name, cpm.page_number, cpm.confidence_score
                     FROM card_page_matches cpm
                     JOIN lectures l ON cpm.lecture_id = l.id
                     WHERE cpm.card_id = ?
@@ -1269,8 +1301,9 @@
                 matches.forEach(m => {
                     const shortLec = m.lecture_name.replace('.pdf', '');
                     const scorePct = Math.round(m.confidence_score * 100);
+                    const safeName = escapeHTML(shortLec).replace(/'/g, "\\'");
                     sourcesHtml += `
-                        <span class="source-badge source-badge-pdf">
+                        <span class="source-badge source-badge-pdf" style="cursor:pointer" onclick="openSlideTextModal(${m.lecture_id}, ${m.page_number}, '${safeName}')">
                             📄 ${escapeHTML(shortLec)} (Folie ${m.page_number} · ${scorePct}%)
                         </span>
                     `;
@@ -1292,6 +1325,10 @@
                     <div style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">Score: ${Math.round(c.max_confidence * 100)}% &blacktriangledown;</div>
                 `;
 
+                // Linebreak Formatter & Pre-wrap Container
+                const formattedQ = formatCardContent(c.question);
+                const formattedA = formatCardContent(c.answer);
+
                 const body = document.createElement('div');
                 body.className = 'card-acc-body';
                 body.innerHTML = `
@@ -1299,10 +1336,10 @@
                         <div style="font-size:0.75rem;color:var(--text-muted)">Erschienen: ${c.appearance_count || 1}x ${trendBadge}</div>
                     </div>
                     <div style="font-weight: 600; margin-bottom: 6px; color: var(--primary);">Frage:</div>
-                    <div style="margin-bottom: 12px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">${c.question}</div>
+                    <div style="margin-bottom: 12px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; line-height: 1.5;">${formattedQ}</div>
                     <div style="font-weight: 600; margin-bottom: 6px; color: var(--accent-teal);">Antwort:</div>
-                    <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; margin-bottom: 10px;">${c.answer}</div>
-                    ${sourcesHtml ? `<div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-bottom:4px">Quellen in dieser Lerneinheit:</div><div style="display:flex;flex-wrap:wrap;">${sourcesHtml}</div>` : ''}
+                    <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; line-height: 1.5;">${formattedA}</div>
+                    ${sourcesHtml ? `<div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-bottom:4px">Quellen in dieser Lerneinheit (antippen für Folientext):</div><div style="display:flex;flex-wrap:wrap;">${sourcesHtml}</div>` : ''}
                 `;
 
                 header.addEventListener('click', () => {
