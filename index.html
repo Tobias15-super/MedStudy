@@ -1,0 +1,1498 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MedStudy Mobile">
+    <title>MedStudy Mobile Assistant</title>
+    
+    <!-- Google Fonts & SQL.js -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
+    
+    <style>
+        :root {
+            --bg-dark: #0a0e1a;
+            --bg-card: #13192b;
+            --bg-card-hover: #1c243b;
+            --primary: #3b82f6;
+            --primary-hover: #2563eb;
+            --accent-teal: #10b981;
+            --accent-amber: #f59e0b;
+            --accent-purple: #a855f7;
+            --accent-red: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border: rgba(255, 255, 255, 0.08);
+            --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Outfit', 'Inter', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: var(--bg-dark);
+            color: var(--text-main);
+            padding-bottom: 90px;
+            min-height: 100vh;
+        }
+
+        /* Loader Screen */
+        #loader {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-dark);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            padding: 24px;
+            text-align: center;
+            transition: opacity 0.3s ease;
+        }
+
+        .spinner {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            animation: spin 0.9s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Upload Label (Native iOS Safari trigger) */
+        .upload-btn {
+            background: linear-gradient(135deg, var(--primary), #1d4ed8);
+            border: none;
+            color: white;
+            padding: 14px 28px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 12px;
+            cursor: pointer;
+            box-shadow: var(--shadow-premium);
+            transition: transform 0.2s ease, opacity 0.2s ease;
+            margin-top: 15px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            user-select: none;
+        }
+
+        .upload-btn:active {
+            transform: scale(0.97);
+        }
+
+        /* Header */
+        header {
+            background: rgba(19, 25, 43, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border);
+            padding: 14px 18px;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            background: linear-gradient(135deg, #60a5fa, #3b82f6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+
+        .save-btn {
+            background: linear-gradient(135deg, var(--accent-teal), #047857);
+            border: none;
+            color: white;
+            padding: 8px 14px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.85rem;
+            transition: opacity 0.2s ease;
+        }
+
+        .save-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .reload-label {
+            background: var(--border);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            font-size: 0.85rem;
+            display: inline-flex;
+            align-items: center;
+        }
+
+        /* Main Container */
+        main {
+            padding: 16px;
+            max-width: 650px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 18px;
+            margin-bottom: 16px;
+            box-shadow: var(--shadow-premium);
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin: 12px 0;
+        }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.88rem;
+            color: var(--text-muted);
+            margin-bottom: 6px;
+        }
+        .progress-bar {
+            height: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 6px;
+            overflow: hidden;
+            border: 1px solid var(--border);
+        }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(to right, var(--primary), var(--accent-teal));
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        /* Stats Grid */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 12px;
+        }
+        .stat-item {
+            background: rgba(10, 14, 26, 0.5);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .stat-val {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--primary);
+        }
+        .stat-lbl {
+            font-size: 0.78rem;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Block Header & Units */
+        .block-header {
+            background: rgba(59, 130, 246, 0.1);
+            color: #93c5fd;
+            padding: 12px 14px;
+            border-radius: 12px;
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-top: 22px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary);
+            border: 1px solid rgba(59, 130, 246, 0.2);
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .unit-item {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px 16px;
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.15s ease;
+        }
+
+        .unit-item:active {
+            background-color: var(--bg-card-hover);
+            transform: scale(0.99);
+        }
+
+        .unit-info {
+            flex: 1;
+            padding-right: 12px;
+        }
+
+        .unit-title {
+            font-weight: 600;
+            font-size: 0.95rem;
+            margin-bottom: 6px;
+            line-height: 1.3;
+        }
+
+        .unit-meta {
+            font-size: 0.76rem;
+            color: var(--text-muted);
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .unit-meta span {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .badge {
+            padding: 3px 8px;
+            border-radius: 8px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-completed {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        .badge-pending {
+            background: rgba(148, 163, 184, 0.12);
+            color: var(--text-muted);
+            border: 1px solid rgba(148, 163, 184, 0.2);
+        }
+
+        .badge-unsynced {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.3);
+        }
+
+        /* Modal (Bottom Sheet on Mobile) */
+        .modal {
+            position: fixed;
+            inset: 0;
+            background: rgba(10, 14, 26, 0.85);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            z-index: 1000;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--bg-card);
+            border-top: 1px solid var(--border);
+            border-radius: 24px 24px 0 0;
+            width: 100%;
+            max-width: 650px;
+            max-height: 92vh;
+            overflow-y: auto;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+        }
+
+        .modal.active .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 14px;
+            position: sticky;
+            top: -20px;
+            background: var(--bg-card);
+            padding: 10px 0;
+            border-bottom: 1px solid var(--border);
+            z-index: 10;
+        }
+
+        .modal-title {
+            font-size: 1.15rem;
+            font-weight: 700;
+            padding-right: 15px;
+            line-height: 1.3;
+        }
+
+        .close-btn {
+            background: var(--border);
+            border: none;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            color: var(--text-main);
+            font-size: 1.2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Modal Tabs */
+        .tab-nav {
+            display: flex;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 4px;
+        }
+
+        .tab-btn {
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            padding: 8px 12px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            white-space: nowrap;
+            transition: all 0.2s;
+        }
+
+        .tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-pane {
+            display: none;
+        }
+
+        .tab-pane.active {
+            display: block;
+        }
+
+        /* Meta Box */
+        .meta-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .meta-box {
+            background: rgba(10, 14, 26, 0.4);
+            border-radius: 10px;
+            padding: 10px;
+            border: 1px solid var(--border);
+        }
+
+        .meta-box-lbl {
+            font-size: 0.72rem;
+            color: var(--text-muted);
+        }
+
+        .meta-box-val {
+            font-weight: 600;
+            margin-top: 2px;
+            font-size: 0.9rem;
+        }
+
+        /* Clinical Facts Cards */
+        .fact-card {
+            background: rgba(10, 14, 26, 0.35);
+            border-left: 4px solid var(--primary);
+            padding: 12px;
+            border-radius: 0 12px 12px 0;
+            margin-bottom: 10px;
+            font-size: 0.88rem;
+            line-height: 1.45;
+            border-top: 1px solid var(--border);
+            border-right: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .fact-card.f-symptom { border-left-color: var(--accent-purple); }
+        .fact-card.f-diagnose { border-left-color: var(--primary); }
+        .fact-card.f-therapie { border-left-color: var(--accent-teal); }
+        .fact-card.f-medikament { border-left-color: #06b6d4; }
+        .fact-card.f-notfall { border-left-color: var(--accent-red); }
+
+        .fact-badge {
+            font-size: 0.68rem;
+            text-transform: uppercase;
+            font-weight: 700;
+            margin-bottom: 4px;
+            display: inline-block;
+            letter-spacing: 0.05em;
+        }
+
+        /* Source Badges */
+        .source-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            padding: 3px 8px;
+            border-radius: 6px;
+            font-size: 0.74rem;
+            font-weight: 500;
+            margin-top: 6px;
+            margin-right: 6px;
+        }
+
+        .source-badge-pdf {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+
+        .source-badge-book {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+        }
+
+        /* Altfragen Accordion */
+        .card-accordion {
+            background: rgba(10, 14, 26, 0.35);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .card-acc-header {
+            padding: 12px 14px;
+            font-size: 0.88rem;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            font-weight: 500;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .card-acc-body {
+            display: none;
+            padding: 14px;
+            border-top: 1px solid var(--border);
+            font-size: 0.88rem;
+            background: rgba(0, 0, 0, 0.2);
+            line-height: 1.45;
+        }
+
+        /* Quiz Question Item */
+        .quiz-item {
+            background: rgba(10, 14, 26, 0.4);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 14px;
+            margin-bottom: 12px;
+        }
+
+        .quiz-option {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+            margin-top: 8px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .quiz-option.correct {
+            background: rgba(16, 185, 129, 0.2) !important;
+            border-color: rgba(16, 185, 129, 0.5) !important;
+            color: #34d399;
+            font-weight: 600;
+        }
+
+        .quiz-option.wrong {
+            background: rgba(239, 68, 68, 0.2) !important;
+            border-color: rgba(239, 68, 68, 0.5) !important;
+            color: #fca5a5;
+        }
+
+        .quiz-explanation {
+            margin-top: 10px;
+            padding: 10px;
+            background: rgba(59, 130, 246, 0.1);
+            border-radius: 8px;
+            font-size: 0.82rem;
+            color: #93c5fd;
+            display: none;
+        }
+
+        /* Actions Bar */
+        .action-container {
+            margin-top: 20px;
+            border-top: 1px solid var(--border);
+            padding-top: 15px;
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-button {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: none;
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-align: center;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .btn-complete {
+            background: linear-gradient(135deg, var(--accent-teal), #047857);
+            color: white;
+        }
+
+        .btn-reset {
+            background: var(--border);
+            color: var(--text-main);
+        }
+
+        /* Time Quick Selection Buttons */
+        .time-quick-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: var(--text-main);
+            padding: 8px 10px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .time-quick-btn:active {
+            background: var(--primary);
+        }
+
+        /* Toast */
+        #toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e293b;
+            border: 1px solid var(--border);
+            padding: 12px 24px;
+            border-radius: 12px;
+            font-weight: 500;
+            box-shadow: var(--shadow-premium);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 2000;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        #toast.active {
+            transform: translateX(-50%) translateY(0);
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Load / Database Pick Panel -->
+    <div id="loader">
+        <div class="spinner" id="loader-spinner" style="display: none;"></div>
+        <h2 style="font-size: 1.5rem; margin-bottom: 8px;">🩺 MedStudy Mobile</h2>
+        <p id="loader-msg" style="color: var(--text-muted); font-size: 0.9rem; max-width: 320px; margin-bottom: 16px;">
+            Wähle deine <strong>medStudy.db</strong> aus dem OneDrive-Ordner aus.
+        </p>
+        
+        <!-- NATIVE LABEL FOR IOS SAFARI -->
+        <label for="db-file-input" class="upload-btn" id="db-pick-label">
+            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+            Datenbank laden
+        </label>
+        <input type="file" id="db-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept="*/*">
+    </div>
+
+    <!-- Header -->
+    <header>
+        <h1>🩺 MedStudy Mobile</h1>
+        <div class="header-actions">
+            <label for="db-file-input" class="reload-label" title="Neue DB-Datei laden">🔄 DB</label>
+            <button class="save-btn" id="save-db-btn" disabled>
+                💾 Speichern
+            </button>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main id="app-content" style="display: none;">
+        
+        <!-- Dashboard Card -->
+        <div class="card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 8px; font-weight: 600;">Lernfortschritt</h3>
+            
+            <div class="progress-container">
+                <div class="progress-label">
+                    <span id="progress-percent">0% abgeschlossen</span>
+                    <span id="progress-count">0/0 Einheiten</span>
+                </div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-item">
+                    <div class="stat-val" id="stat-learned">0</div>
+                    <div class="stat-lbl">Gelernt</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-val" id="stat-unsynced" style="color: var(--accent-amber);">0</div>
+                    <div class="stat-lbl">Offen für Anki</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Overdue Warnings -->
+        <div class="card" id="overdue-card" style="display: none; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05);">
+            <h3 style="color: var(--accent-red); font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
+                🚨 Überfällige Lerneinheiten!
+            </h3>
+            <p id="overdue-text" style="font-size: 0.85rem; color: var(--text-muted);"></p>
+        </div>
+
+        <!-- Section Learning Units -->
+        <h3 style="font-size: 1.05rem; margin-top: 22px; margin-bottom: 12px; font-weight: 600;">Deine Lerneinheiten</h3>
+        <div id="units-list"></div>
+
+    </main>
+
+    <!-- Slide-Up Detail Modal -->
+    <div class="modal" id="detail-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title" id="m-title">Lerneinheit Details</div>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <!-- Tab Navigation -->
+            <div class="tab-nav">
+                <button class="tab-btn active" onclick="switchTab('tab-summary')">Info</button>
+                <button class="tab-btn" onclick="switchTab('tab-facts')">Facts (<span id="m-facts-count">0</span>)</button>
+                <button class="tab-btn" onclick="switchTab('tab-cards')">Altfragen (<span id="m-cards-count">0</span>)</button>
+                <button class="tab-btn" onclick="switchTab('tab-quiz')">🧠 Quiz (<span id="m-quiz-count">0</span>)</button>
+            </div>
+
+            <!-- Tab Content: Summary -->
+            <div class="tab-pane active" id="tab-summary">
+                <div class="meta-grid">
+                    <div class="meta-box">
+                        <div class="meta-box-lbl">Klinische Relevanz</div>
+                        <div class="meta-box-val" id="m-rel-clinical">3/5</div>
+                    </div>
+                    <div class="meta-box">
+                        <div class="meta-box-lbl">Prüfungsrelevanz</div>
+                        <div class="meta-box-val" id="m-rel-exam">3/5</div>
+                    </div>
+                </div>
+                
+                <h4 style="font-size: 0.92rem; margin-bottom: 6px; font-weight: 600;">Zusammenfassung</h4>
+                <p id="m-summary" style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 16px;"></p>
+
+                <h4 style="font-size: 0.92rem; margin-bottom: 6px; font-weight: 600;">Lernziele</h4>
+                <ul id="m-objectives" style="font-size: 0.86rem; color: var(--text-muted); padding-left: 20px; line-height: 1.45;"></ul>
+            </div>
+
+            <!-- Tab Content: Clinical Facts -->
+            <div class="tab-pane" id="tab-facts">
+                <div id="m-facts-list"></div>
+            </div>
+
+            <!-- Tab Content: Altfragen (Anki) -->
+            <div class="tab-pane" id="tab-cards">
+                <div id="m-cards-list"></div>
+            </div>
+
+            <!-- Tab Content: Quiz -->
+            <div class="tab-pane" id="tab-quiz">
+                <div id="m-quiz-list"></div>
+            </div>
+
+            <!-- Action buttons -->
+            <div class="action-container" id="m-actions"></div>
+        </div>
+    </div>
+
+    <!-- Custom Time Modal (Smooth iOS replacement for prompt) -->
+    <div class="modal" id="time-modal" style="z-index: 1100;">
+        <div class="modal-content" style="max-width: 420px; padding: 22px; border-radius: 20px;">
+            <h3 style="font-size: 1.1rem; margin-bottom: 8px; font-weight: 700;">⏱️ Lernzeit eintragen</h3>
+            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
+                Wie viele Minuten hast du für diese Einheit gelernt?
+            </p>
+
+            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                <button class="time-quick-btn" onclick="setCompletionMinutes(30)">30 Min.</button>
+                <button class="time-quick-btn" onclick="setCompletionMinutes(45)">45 Min.</button>
+                <button class="time-quick-btn" onclick="setCompletionMinutes(60)">60 Min.</button>
+                <button class="time-quick-btn" onclick="setCompletionMinutes(90)">90 Min.</button>
+            </div>
+
+            <input type="number" id="input-completion-time" value="45" min="1" max="600" style="width: 100%; padding: 12px; font-size: 1.2rem; font-weight: 700; border-radius: 10px; border: 1px solid var(--border); background: rgba(10, 14, 26, 0.6); color: white; margin-bottom: 18px; text-align: center;">
+
+            <div style="display: flex; gap: 10px;">
+                <button class="action-button btn-reset" onclick="closeTimeModal()">Abbrechen</button>
+                <button class="action-button btn-complete" onclick="confirmCompleteUnit()">✅ Speichern</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notice -->
+    <div id="toast">Änderungen gespeichert!</div>
+
+    <script>
+        let db = null;
+        let activeUnitId = null;
+        let selectedFile = null;
+        let pendingCompletionUnitId = null;
+
+        // Friendly error handler for OneDrive App preview frame
+        window.onerror = function(msg, url, line) {
+            const loaderMsg = document.getElementById('loader-msg');
+            if (loaderMsg) {
+                loaderMsg.innerHTML = `
+                <div style="color:var(--accent-red);font-weight:600;margin-bottom:8px">⚠️ Vorschaufenster-Sperre erkannt</div>
+                <div style="font-size:0.85rem;line-height:1.4">
+                    Die OneDrive-App blockiert in ihrem internen Vorschaufenster das Ausführen von Skripten.<br><br>
+                    <strong>So klappt es sofort:</strong><br>
+                    1. Tippe in der OneDrive-App bei der Datei auf <strong>(...)</strong> &rarr; <strong>"In Safari öffnen"</strong>.<br>
+                    2. <em>Oder:</em> Öffne auf dem iPad die App <strong>"Dateien"</strong> (Files) &rarr; OneDrive &rarr; <code>medstudy_mobile.html</code>.
+                </div>`;
+            }
+        };
+
+        // Initialize SQL.js
+        const sqlPromise = initSqlJs({
+            locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+        });
+
+        // IndexedDB Caching for DB ArrayBuffer
+        const IDB_DB_NAME = "MedStudyMobileDB";
+        const IDB_STORE = "files";
+        const IDB_KEY = "medstudy_db";
+
+        function saveToIndexedDB(arrayBuffer) {
+            return new Promise((resolve) => {
+                const req = indexedDB.open(IDB_DB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore(IDB_STORE);
+                };
+                req.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    const tx = idb.transaction(IDB_STORE, "readwrite");
+                    tx.objectStore(IDB_STORE).put(arrayBuffer, IDB_KEY);
+                    tx.oncomplete = () => resolve(true);
+                };
+                req.onerror = () => resolve(false);
+            });
+        }
+
+        function loadFromIndexedDB() {
+            return new Promise((resolve) => {
+                const req = indexedDB.open(IDB_DB_NAME, 1);
+                req.onupgradeneeded = (e) => {
+                    e.target.result.createObjectStore(IDB_STORE);
+                };
+                req.onsuccess = (e) => {
+                    const idb = e.target.result;
+                    const tx = idb.transaction(IDB_STORE, "readonly");
+                    const getReq = tx.objectStore(IDB_STORE).get(IDB_KEY);
+                    getReq.onsuccess = () => resolve(getReq.result || null);
+                    getReq.onerror = () => resolve(null);
+                };
+                req.onerror = () => resolve(null);
+            });
+        }
+
+        // Auto-load cached DB on page load
+        window.addEventListener('DOMContentLoaded', async () => {
+            const cachedBuffer = await loadFromIndexedDB();
+            if (cachedBuffer) {
+                try {
+                    document.getElementById('loader-spinner').style.display = 'block';
+                    document.getElementById('db-pick-label').style.display = 'none';
+                    document.getElementById('loader-msg').innerText = "Lade gespeicherte Datenbank aus dem Cache...";
+                    
+                    const SQL = await sqlPromise;
+                    db = new SQL.Database(new Uint8Array(cachedBuffer));
+                    
+                    document.getElementById('loader').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('loader').style.display = 'none';
+                        document.getElementById('app-content').style.display = 'block';
+                        document.getElementById('save-db-btn').disabled = false;
+                        loadDashboard();
+                        loadUnits();
+                    }, 300);
+                } catch(e) {
+                    console.error("Cache load error:", e);
+                    document.getElementById('loader-spinner').style.display = 'none';
+                    document.getElementById('db-pick-label').style.display = 'inline-flex';
+                    document.getElementById('loader-msg').innerText = "Wähle deine medStudy.db aus dem OneDrive-Ordner aus.";
+                }
+            }
+        });
+
+        // Event Listener for Native File Picker (iPadOS / iOS compatible)
+        document.getElementById('db-file-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            selectedFile = file;
+
+            document.getElementById('loader').style.display = 'flex';
+            document.getElementById('loader').style.opacity = '1';
+            document.getElementById('loader-spinner').style.display = 'block';
+            document.getElementById('db-pick-label').style.display = 'none';
+            document.getElementById('loader-msg').innerText = "Lade und initialisiere SQLite-WASM...";
+
+            try {
+                const SQL = await sqlPromise;
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    const uints = new Uint8Array(reader.result);
+                    db = new SQL.Database(uints);
+                    await saveToIndexedDB(reader.result);
+                    
+                    document.getElementById('loader').style.opacity = '0';
+                    setTimeout(() => {
+                        document.getElementById('loader').style.display = 'none';
+                        document.getElementById('app-content').style.display = 'block';
+                        document.getElementById('save-db-btn').disabled = false;
+                        loadDashboard();
+                        loadUnits();
+                    }, 300);
+                };
+                reader.readAsArrayBuffer(file);
+            } catch (err) {
+                alert("Fehler beim Laden der DB: " + err.message);
+                document.getElementById('loader-spinner').style.display = 'none';
+                document.getElementById('db-pick-label').style.display = 'inline-flex';
+                document.getElementById('loader-msg').innerText = "Dateilesefehler. Bitte versuche es erneut.";
+            }
+        });
+
+        document.getElementById('save-db-btn').addEventListener('click', async () => {
+            if (!db) return;
+            try {
+                const binaryArray = db.export();
+                await saveToIndexedDB(binaryArray.buffer);
+
+                const blob = new Blob([binaryArray], { type: "application/octet-stream" });
+                const a = document.createElement("a");
+                a.href = URL.createObjectURL(blob);
+                a.download = selectedFile ? selectedFile.name : "medStudy.db";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                showToast("Datenbank exportiert! Ersetze die medStudy.db im OneDrive-Ordner.");
+            } catch (err) {
+                alert("Fehler beim Exportieren: " + err.message);
+            }
+        });
+
+        // Query Helper
+        function queryDB(sql, params = []) {
+            if (!db) return [];
+            try {
+                const stmt = db.prepare(sql);
+                stmt.bind(params);
+                const result = [];
+                while (stmt.step()) {
+                    result.push(stmt.getAsObject());
+                }
+                stmt.free();
+                return result;
+            } catch (err) {
+                console.error("DB Query Error:", err, sql);
+                return [];
+            }
+        }
+
+        // Exec Helper
+        function execDB(sql, params = []) {
+            if (!db) return;
+            try {
+                db.run(sql, params);
+            } catch (err) {
+                console.error("DB Exec Error:", err, sql);
+                alert("Datenbankfehler beim Schreiben: " + err.message);
+            }
+        }
+
+        // Toast Notice
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('active');
+            setTimeout(() => {
+                toast.classList.remove('active');
+            }, 4000);
+        }
+
+        // Dashboard loading
+        function loadDashboard() {
+            const counts = queryDB("SELECT COUNT(*) as tot, SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as comp, SUM(CASE WHEN status='completed' AND (anki_synced=0 OR anki_synced IS NULL) THEN 1 ELSE 0 END) as unsynced FROM learning_units");
+            if (counts.length > 0) {
+                const tot = counts[0].tot || 0;
+                const comp = counts[0].comp || 0;
+                const unsynced = counts[0].unsynced || 0;
+                
+                document.getElementById('stat-learned').innerText = comp;
+                document.getElementById('stat-unsynced').innerText = unsynced;
+                document.getElementById('progress-count').innerText = `${comp}/${tot} Einheiten`;
+                
+                const percent = tot > 0 ? Math.round((comp / tot) * 100) : 0;
+                document.getElementById('progress-percent').innerText = `${percent}% abgeschlossen`;
+                document.getElementById('progress-fill').style.width = `${percent}%`;
+            }
+
+            // Overdue check
+            const startDateRow = queryDB("SELECT value FROM settings WHERE key='study_start_date'");
+            if (startDateRow.length > 0 && startDateRow[0].value) {
+                const startDateStr = startDateRow[0].value;
+                const start = new Date(startDateStr);
+                const today = new Date();
+                
+                let daysNeeded = 0;
+                let temp = new Date(start);
+                while (temp <= today) {
+                    const day = temp.getDay();
+                    if (day !== 0 && day !== 6) {
+                        daysNeeded++;
+                    }
+                    temp.setDate(temp.getDate() + 1);
+                }
+
+                const updRow = queryDB("SELECT value FROM settings WHERE key='learning_units_per_day'");
+                const upd = updRow.length > 0 ? parseInt(updRow[0].value) || 2 : 2;
+                const targetCount = daysNeeded * upd;
+
+                const completedCount = queryDB("SELECT COUNT(*) as c FROM learning_units WHERE status='completed'")[0].c;
+                if (completedCount < targetCount) {
+                    const diff = targetCount - completedCount;
+                    document.getElementById('overdue-card').style.display = 'block';
+                    document.getElementById('overdue-text').innerHTML = `Du liegst aktuell <strong>${diff} Lerneinheiten</strong> hinter deinem Lernplan zurück. Hake heute ein paar Blöcke ab, um den Rückstand aufzuholen!`;
+                } else {
+                    document.getElementById('overdue-card').style.display = 'none';
+                }
+            }
+        }
+
+        // Units checklist loading
+        function loadUnits() {
+            const list = document.getElementById('units-list');
+            list.innerHTML = "";
+
+            const units = queryDB(`
+                SELECT lu.*, b.name as block_name 
+                FROM learning_units lu 
+                JOIN blocks b ON lu.block_id = b.id
+                WHERE b.is_ignored = 0
+                ORDER BY b.sort_order, lu.id
+            `);
+
+            if (units.length === 0) {
+                list.innerHTML = `<p style="color: var(--text-muted); text-align: center; font-size: 0.9rem; padding: 20px;">Keine Lerneinheiten gefunden. Bitte scanne deine Ordner am PC.</p>`;
+                return;
+            }
+
+            let currentBlock = "";
+            let blockDiv = null;
+
+            units.forEach(u => {
+                if (u.block_name !== currentBlock) {
+                    currentBlock = u.block_name;
+                    
+                    const header = document.createElement('div');
+                    header.className = 'block-header';
+                    header.innerText = currentBlock;
+                    list.appendChild(header);
+
+                    blockDiv = document.createElement('div');
+                    blockDiv.id = `block-${u.block_id}`;
+                    list.appendChild(blockDiv);
+                }
+
+                const item = document.createElement('div');
+                item.className = 'unit-item';
+                item.addEventListener('click', () => openUnit(u.id));
+
+                let badgeHtml = "";
+                if (u.status === 'completed') {
+                    if (u.anki_synced === 0 || u.anki_synced === null) {
+                        badgeHtml = `<span class="badge badge-unsynced">Gelernt (Wartet auf PC-Anki)</span>`;
+                    } else {
+                        badgeHtml = `<span class="badge badge-completed">Abgeschlossen</span>`;
+                    }
+                } else {
+                    badgeHtml = `<span class="badge badge-pending">Offen</span>`;
+                }
+
+                item.innerHTML = `
+                    <div class="unit-info">
+                        <div class="unit-title">${escapeHTML(u.title)}</div>
+                        <div class="unit-meta">
+                            <span>⏱️ ${u.estimated_duration_minutes || 45} Min.</span>
+                            <span>🎯 Relevanz: ${u.exam_relevance || 3}/5</span>
+                            ${badgeHtml}
+                        </div>
+                    </div>
+                    <div style="color: var(--text-muted); font-size: 1.2rem;">&rsaquo;</div>
+                `;
+                blockDiv.appendChild(item);
+            });
+        }
+
+        // Open Unit Detail
+        function openUnit(unitId) {
+            activeUnitId = unitId;
+            const u = queryDB("SELECT * FROM learning_units WHERE id = ?", [unitId])[0];
+            if (!u) return;
+
+            document.getElementById('m-title').innerText = u.title;
+            document.getElementById('m-summary').innerText = u.summary || "Keine KI-Zusammenfassung verfügbar. Führe die Analyse am PC aus.";
+            document.getElementById('m-rel-clinical').innerText = `${u.clinical_relevance || 3}/5 (${u.clinical_relevance_note || 'Keine Angabe'})`;
+            document.getElementById('m-rel-exam').innerText = `${u.exam_relevance || 3}/5 (${u.exam_relevance_note || 'Keine Angabe'})`;
+
+            // Lernziele
+            const objList = document.getElementById('m-objectives');
+            objList.innerHTML = "";
+            if (u.learning_objectives) {
+                try {
+                    const objs = JSON.parse(u.learning_objectives);
+                    if (Array.isArray(objs)) {
+                        objs.forEach(o => {
+                            const li = document.createElement('li');
+                            li.innerText = o;
+                            objList.appendChild(li);
+                        });
+                    }
+                } catch(e) {}
+            }
+            if (objList.children.length === 0) {
+                objList.innerHTML = `<li style="list-style: none; color: var(--text-muted);">Keine Lernziele definiert.</li>`;
+            }
+
+            // Clinical Facts mit Vorlesungs- und Buchquellen
+            const facts = queryDB(`
+                SELECT cf.*, l.filename as lecture_filename
+                FROM clinical_facts cf
+                LEFT JOIN lectures l ON cf.lecture_id = l.id
+                WHERE cf.unit_id = ?
+                ORDER BY cf.importance DESC, cf.sort_order
+            `, [unitId]);
+            
+            document.getElementById('m-facts-count').innerText = facts.length;
+            const factsList = document.getElementById('m-facts-list');
+            factsList.innerHTML = "";
+            
+            if (facts.length === 0) {
+                factsList.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0;">Keine klinischen Facts generiert. Führe den KI-Scan am PC aus.</p>`;
+            } else {
+                facts.forEach(f => {
+                    const div = document.createElement('div');
+                    div.className = `fact-card f-${f.fact_type || 'allgemein'}`;
+                    
+                    const typeLabel = {
+                        symptom: "Symptom",
+                        diagnose: "Diagnose",
+                        therapie: "Therapie",
+                        medikament: "Medikament",
+                        notfall: "🚨 Notfall",
+                        allgemein: "Wissen"
+                    }[f.fact_type] || "Wissen";
+
+                    let linksHtml = '';
+                    if (f.pdf_pages && f.lecture_filename) {
+                        const pages = f.pdf_pages.split(',').map(p => p.trim());
+                        const shortName = f.lecture_filename.replace('.pdf', '');
+                        pages.forEach(p => {
+                            linksHtml += `
+                                <span class="source-badge source-badge-pdf">
+                                    📄 ${escapeHTML(shortName)} (S. ${p})
+                                </span>
+                            `;
+                        });
+                    }
+
+                    if (f.book_references) {
+                        try {
+                            const refs = JSON.parse(f.book_references);
+                            if (Array.isArray(refs)) {
+                                refs.forEach(ref => {
+                                    linksHtml += `
+                                        <span class="source-badge source-badge-book">
+                                            📖 ${escapeHTML(ref.book_title.substring(0, 22))}... (S. ${ref.page_start})
+                                        </span>
+                                    `;
+                                });
+                            }
+                        } catch(e) {}
+                    }
+
+                    div.innerHTML = `
+                        <div class="fact-badge" style="color: var(--text-muted);">${typeLabel} (Imp: ${f.importance}/5)</div>
+                        <div>${escapeHTML(f.fact_text)}</div>
+                        ${linksHtml ? `<div style="display: flex; flex-wrap: wrap; margin-top: 6px;">${linksHtml}</div>` : ''}
+                    `;
+                    factsList.appendChild(div);
+                });
+            }
+
+            // Anki Cards mit echten Vorlesungs-Quellen!
+            const thresholdRow = queryDB("SELECT value FROM settings WHERE key='match_threshold_secondary'");
+            const threshold = thresholdRow.length > 0 ? parseFloat(thresholdRow[0].value) || 0.40 : 0.40;
+            const primaryRow = queryDB("SELECT value FROM settings WHERE key='match_threshold_primary'");
+            const thresholdPrimary = primaryRow.length > 0 ? parseFloat(primaryRow[0].value) || 0.55 : 0.55;
+
+            const cards = queryDB(`
+                SELECT DISTINCT
+                    ac.*,
+                    MAX(cpm.confidence_score) as max_confidence,
+                    MAX(cpm.is_manual) as is_manual
+                FROM anki_cards ac
+                JOIN card_page_matches cpm ON ac.id = cpm.card_id
+                JOIN unit_lectures ul ON cpm.lecture_id = ul.lecture_id
+                WHERE ul.unit_id = ?
+                  AND (cpm.confidence_score >= ? OR cpm.is_manual = 1)
+                GROUP BY ac.id
+                ORDER BY max_confidence DESC
+            `, [unitId, threshold]);
+
+            const coupled = [];
+            const candidates = [];
+            cards.forEach(c => {
+                const isCoupled = (c.is_manual === 1) || (c.is_manual !== -1 && c.max_confidence >= thresholdPrimary);
+                if (isCoupled) {
+                    coupled.push(c);
+                } else {
+                    candidates.push(c);
+                }
+            });
+
+            document.getElementById('m-cards-count').innerText = coupled.length;
+            const cardsList = document.getElementById('m-cards-list');
+            cardsList.innerHTML = "";
+
+            const renderMobileCard = (c) => {
+                const acc = document.createElement('div');
+                acc.className = 'card-accordion';
+                
+                let blockTagHtml = '';
+                if (c.tags) {
+                    try {
+                        const tagsArray = JSON.parse(c.tags);
+                        if (Array.isArray(tagsArray)) {
+                            const blockTag = tagsArray.find(t => t.toLowerCase().startsWith('block'));
+                            if (blockTag) {
+                                blockTagHtml = `<span style="padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); margin-right: 6px; white-space: nowrap;">${escapeHTML(blockTag)}</span>`;
+                            }
+                        }
+                    } catch(e) {}
+                }
+
+                // Vorlesungs-Quellen für diese Altfrage abfragen
+                const matches = queryDB(`
+                    SELECT l.filename as lecture_name, cpm.page_number, cpm.confidence_score
+                    FROM card_page_matches cpm
+                    JOIN lectures l ON cpm.lecture_id = l.id
+                    WHERE cpm.card_id = ?
+                    ORDER BY cpm.confidence_score DESC
+                `, [c.id]);
+
+                let sourcesHtml = '';
+                matches.forEach(m => {
+                    const shortLec = m.lecture_name.replace('.pdf', '');
+                    const scorePct = Math.round(m.confidence_score * 100);
+                    sourcesHtml += `
+                        <span class="source-badge source-badge-pdf">
+                            📄 ${escapeHTML(shortLec)} (Folie ${m.page_number} · ${scorePct}%)
+                        </span>
+                    `;
+                });
+
+                // Trend & Year badges
+                let trendBadge = '';
+                if (c.frequency_trend === 'rising') trendBadge = '<span style="color:#10b981;font-size:0.75rem;margin-left:4px">📈 Steigend</span>';
+                else if (c.frequency_trend === 'declining') trendBadge = '<span style="color:#ef4444;font-size:0.75rem;margin-left:4px">📉 Fallend</span>';
+                else if (c.frequency_trend === 'stable') trendBadge = '<span style="color:#3b82f6;font-size:0.75rem;margin-left:4px">➡️ Stabil</span>';
+                
+                const header = document.createElement('div');
+                header.className = 'card-acc-header';
+                header.innerHTML = `
+                    <div style="flex: 1; padding-right: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
+                        ${blockTagHtml}
+                        <span>${escapeHTML(c.question.replace(/<[^>]*>/g, '').substring(0, 75))}...</span>
+                    </div>
+                    <div style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">Score: ${Math.round(c.max_confidence * 100)}% &blacktriangledown;</div>
+                `;
+
+                const body = document.createElement('div');
+                body.className = 'card-acc-body';
+                body.innerHTML = `
+                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+                        <div style="font-size:0.75rem;color:var(--text-muted)">Erschienen: ${c.appearance_count || 1}x ${trendBadge}</div>
+                    </div>
+                    <div style="font-weight: 600; margin-bottom: 6px; color: var(--primary);">Frage:</div>
+                    <div style="margin-bottom: 12px; background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">${c.question}</div>
+                    <div style="font-weight: 600; margin-bottom: 6px; color: var(--accent-teal);">Antwort:</div>
+                    <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px; margin-bottom: 10px;">${c.answer}</div>
+                    ${sourcesHtml ? `<div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-bottom:4px">Quellen in dieser Lerneinheit:</div><div style="display:flex;flex-wrap:wrap;">${sourcesHtml}</div>` : ''}
+                `;
+
+                header.addEventListener('click', () => {
+                    const isVisible = body.style.display === 'block';
+                    body.style.display = isVisible ? 'none' : 'block';
+                });
+
+                acc.appendChild(header);
+                acc.appendChild(body);
+                return acc;
+            };
+
+            if (coupled.length === 0 && candidates.length === 0) {
+                cardsList.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0;">Keine Altfragen (Anki) zu dieser Einheit gematcht.</p>`;
+            } else {
+                if (coupled.length > 0) {
+                    coupled.forEach(c => cardsList.appendChild(renderMobileCard(c)));
+                } else {
+                    const emptyCoupled = document.createElement('p');
+                    emptyCoupled.style.cssText = "color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 10px 0; border: 1px dashed rgba(255,255,255,0.1); border-radius: 6px; margin-bottom: 10px;";
+                    emptyCoupled.innerText = "Keine gekoppelten Altfragen in dieser Einheit.";
+                    cardsList.appendChild(emptyCoupled);
+                }
+
+                if (candidates.length > 0) {
+                    const divider = document.createElement('div');
+                    divider.style.cssText = "margin: 25px 0 15px 0; text-align: center; border-top: 1px dashed rgba(255,255,255,0.15); position: relative;";
+                    divider.innerHTML = `<span style="position: relative; top: -10px; background: #13192b; padding: 0 10px; font-size: 0.75rem; color: #f59e0b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Mögliche Kandidaten (unter ${Math.round(thresholdPrimary * 100)}%)</span>`;
+                    cardsList.appendChild(divider);
+
+                    candidates.forEach(c => cardsList.appendChild(renderMobileCard(c)));
+                }
+            }
+
+            // Quiz Questions
+            const quizList = document.getElementById('m-quiz-list');
+            quizList.innerHTML = "";
+            const quizzes = queryDB("SELECT * FROM generated_questions WHERE unit_id = ?", [unitId]);
+            document.getElementById('m-quiz-count').innerText = quizzes.length;
+
+            if (quizzes.length === 0) {
+                quizList.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0;">Keine KI-Quizfragen vorhanden.</p>`;
+            } else {
+                quizzes.forEach((q, idx) => {
+                    const qDiv = document.createElement('div');
+                    qDiv.className = 'quiz-item';
+
+                    const options = [
+                        { key: 'a', text: q.option_a },
+                        { key: 'b', text: q.option_b },
+                        { key: 'c', text: q.option_c },
+                        { key: 'd', text: q.option_d },
+                    ].filter(o => o.text);
+
+                    let optionsHtml = '';
+                    options.forEach(o => {
+                        optionsHtml += `<div class="quiz-option" data-key="${o.key}" onclick="checkQuizAnswer(this, '${q.correct_option}', '${q.id}')"><strong>${o.key.toUpperCase()}:</strong> ${escapeHTML(o.text)}</div>`;
+                    });
+
+                    qDiv.innerHTML = `
+                        <div style="font-weight:600;font-size:0.9rem;margin-bottom:8px">Frage ${idx + 1}: ${escapeHTML(q.question)}</div>
+                        ${optionsHtml}
+                        <div class="quiz-explanation" id="quiz-exp-${q.id}">
+                            <strong>💡 Erklärung:</strong> ${escapeHTML(q.explanation || 'Keine Erklärung verfügbar.')}
+                        </div>
+                    `;
+                    quizList.appendChild(qDiv);
+                });
+            }
+
+            // Actions (Complete / Reset)
+            const actions = document.getElementById('m-actions');
+            actions.innerHTML = "";
+            
+            if (u.status === 'completed') {
+                const btn = document.createElement('button');
+                btn.className = 'action-button btn-reset';
+                btn.innerText = "Als offen markieren";
+                btn.addEventListener('click', () => resetUnit(unitId));
+                actions.appendChild(btn);
+            } else {
+                const btn = document.createElement('button');
+                btn.className = 'action-button btn-complete';
+                btn.innerHTML = `🏁 Als gelernt markieren`;
+                btn.addEventListener('click', () => openTimeModal(unitId));
+                actions.appendChild(btn);
+            }
+
+            // Open Modal
+            switchTab('tab-summary');
+            document.getElementById('detail-modal').classList.add('active');
+        }
+
+        function checkQuizAnswer(el, correctKey, quizId) {
+            const parent = el.parentElement;
+            const options = parent.querySelectorAll('.quiz-option');
+            options.forEach(opt => {
+                const key = opt.getAttribute('data-key');
+                if (key === correctKey) {
+                    opt.classList.add('correct');
+                } else if (opt === el) {
+                    opt.classList.add('wrong');
+                }
+            });
+            const exp = document.getElementById(`quiz-exp-${quizId}`);
+            if (exp) exp.style.display = 'block';
+        }
+
+        function closeModal() {
+            document.getElementById('detail-modal').classList.remove('active');
+            activeUnitId = null;
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+
+            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            if (btn) btn.classList.add('active');
+            
+            document.getElementById(tabId).classList.add('active');
+        }
+
+        // Custom Time Selection Modal
+        function openTimeModal(unitId) {
+            pendingCompletionUnitId = unitId;
+            document.getElementById('input-completion-time').value = "45";
+            document.getElementById('time-modal').classList.add('active');
+        }
+
+        function closeTimeModal() {
+            document.getElementById('time-modal').classList.remove('active');
+            pendingCompletionUnitId = null;
+        }
+
+        function setCompletionMinutes(mins) {
+            document.getElementById('input-completion-time').value = mins;
+        }
+
+        function confirmCompleteUnit() {
+            if (!pendingCompletionUnitId) return;
+            const inputVal = parseInt(document.getElementById('input-completion-time').value);
+            const mins = (inputVal && inputVal > 0) ? inputVal : 45;
+            const unitId = pendingCompletionUnitId;
+
+            closeTimeModal();
+
+            execDB(`
+                INSERT INTO study_sessions (unit_id, completed_at, duration_minutes)
+                VALUES (?, datetime('now'), ?)
+            `, [unitId, mins]);
+
+            execDB(`
+                UPDATE learning_units
+                SET status = 'completed', completed_at = datetime('now'), anki_synced = 0
+                WHERE id = ?
+            `, [unitId]);
+
+            const avgRow = queryDB("SELECT AVG(duration_minutes) as avg FROM study_sessions WHERE unit_id = ?", [unitId])[0];
+            if (avgRow && avgRow.avg) {
+                execDB("UPDATE learning_units SET actual_avg_duration_minutes = ? WHERE id = ?", [avgRow.avg, unitId]);
+            }
+
+            closeModal();
+            loadDashboard();
+            loadUnits();
+            showToast(`Einheit abgeschlossen (${mins} Min.)! Tippe oben auf '💾 Speichern'.`);
+        }
+
+        function resetUnit(unitId) {
+            if (!confirm("Möchtest du den Fortschritt dieser Einheit wirklich zurücksetzen?")) return;
+
+            execDB("DELETE FROM study_sessions WHERE unit_id = ?", [unitId]);
+            execDB("UPDATE learning_units SET status = 'not_started', completed_at = NULL, anki_synced = 0 WHERE id = ?", [unitId]);
+
+            closeModal();
+            loadDashboard();
+            loadUnits();
+            showToast("Lerneinheit zurückgesetzt!");
+        }
+
+        function escapeHTML(str) {
+            if (!str) return "";
+            return str
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
