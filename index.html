@@ -853,11 +853,102 @@
             document.getElementById('slide-modal-title').innerText = `📄 ${lectureName} (Folie ${pageNum})`;
             document.getElementById('slide-modal-text').innerText = text;
             document.getElementById('slide-modal').classList.add('active');
+            try { history.pushState({ modal: 'slide' }, ''); } catch(e) {}
         }
 
         function closeSlideModal() {
             document.getElementById('slide-modal').classList.remove('active');
         }
+
+        function openMobileCardMatchesModal(cardId) {
+            const cardRows = queryDB("SELECT * FROM anki_cards WHERE id = ?", [cardId]);
+            if (cardRows.length === 0) return;
+            const card = cardRows[0];
+
+            const primaryRow = queryDB("SELECT value FROM settings WHERE key='match_threshold_primary'");
+            const thresholdPrimary = primaryRow.length > 0 ? parseFloat(primaryRow[0].value) || 0.55 : 0.55;
+
+            const matches = queryDB(`
+                SELECT DISTINCT l.id as lecture_id, l.filename as lecture_name, lu.id as unit_id, lu.title as unit_title, b.name as block_name, cpm.page_number, cpm.confidence_score, cpm.is_manual
+                FROM card_page_matches cpm
+                JOIN lectures l ON cpm.lecture_id = l.id
+                LEFT JOIN unit_lectures ul ON l.id = ul.lecture_id
+                LEFT JOIN learning_units lu ON ul.unit_id = lu.id
+                LEFT JOIN blocks b ON lu.block_id = b.id
+                WHERE cpm.card_id = ?
+                  AND ((cpm.confidence_score >= ? AND (cpm.is_manual IS NULL OR cpm.is_manual != -1)) OR cpm.is_manual = 1)
+                ORDER BY lu.id IS NULL, lu.id, l.id, cpm.confidence_score DESC
+            `, [cardId, thresholdPrimary]);
+
+            const grouped = {};
+            matches.forEach(m => {
+                const key = m.lecture_id;
+                if (!grouped[key]) {
+                    grouped[key] = {
+                        lecture_id: m.lecture_id,
+                        lecture_name: m.lecture_name,
+                        unit_id: m.unit_id,
+                        unit_title: m.unit_title || 'Keine Lerneinheit',
+                        block_name: m.block_name || '',
+                        max_score: m.confidence_score,
+                        is_manual: m.is_manual,
+                        pages: []
+                    };
+                }
+                if (!grouped[key].pages.includes(m.page_number)) {
+                    grouped[key].pages.push(m.page_number);
+                }
+            });
+
+            const groupedList = Object.values(grouped);
+
+            let html = `
+            <div style="margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
+                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Altfrage #${card.id}</div>
+                <div style="font-size: 0.88rem; margin-top: 4px; line-height: 1.4;">${escapeHTML(card.question.replace(/<[^>]*>/g, ''))}</div>
+            </div>
+            <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px;">
+                Gematcht in ${groupedList.length} Vorlesung${groupedList.length !== 1 ? 'en' : ''}:
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 8px;">
+            `;
+
+            groupedList.forEach(g => {
+                const scorePct = Math.round(g.max_score * 100);
+                const safeLecName = escapeHTML(g.lecture_name.replace('.pdf', '')).replace(/'/g, "\\'");
+                html += `
+                <div style="padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px;">
+                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                        <div>
+                            ${g.block_name ? `<span style="font-size: 0.68rem; padding: 1px 5px; border-radius: 4px; background: rgba(168,85,247,0.15); color: #c084fc;">${escapeHTML(g.block_name)}</span>` : ''}
+                            <div style="font-size: 0.88rem; font-weight: 600; margin-top: 2px;">${escapeHTML(g.unit_title)}</div>
+                            <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">📄 ${escapeHTML(g.lecture_name)}</div>
+                        </div>
+                        <span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.15); color: #60a5fa;">${scorePct}% Match</span>
+                    </div>
+                    <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
+                        ${g.pages.map(p => `
+                            <span class="source-badge source-badge-pdf" style="cursor:pointer" onclick="openSlideTextModal(${g.lecture_id}, ${p}, '${safeLecName}')">
+                                📄 Folie ${p} (Folientext)
+                            </span>
+                        `).join('')}
+                    </div>
+                </div>
+                `;
+            });
+            html += `</div>`;
+
+            document.getElementById('slide-modal-title').innerText = `🔗 Vorlesungs-Zuordnungen (${groupedList.length})`;
+            document.getElementById('slide-modal-text').innerHTML = html;
+            document.getElementById('slide-modal').classList.add('active');
+            try { history.pushState({ modal: 'matches' }, ''); } catch(e) {}
+        }
+
+        window.addEventListener('popstate', (e) => {
+            closeModal();
+            closeSlideModal();
+            closeTimeModal();
+        });
 
         // Friendly error handler for OneDrive App preview frame
         window.onerror = function(msg, url, line) {
@@ -1323,7 +1414,23 @@
                     } catch(e) {}
                 }
 
-                // Vorlesungs-Quellen für diese Altfrage abfragen
+                // Vorlesungs-Indikator (über die gesamte DB hinweg)
+                const allMatches = queryDB(`
+                    SELECT DISTINCT cpm.lecture_id
+                    FROM card_page_matches cpm
+                    WHERE cpm.card_id = ?
+                      AND ((cpm.confidence_score >= ? AND (cpm.is_manual IS NULL OR cpm.is_manual != -1)) OR cpm.is_manual = 1)
+                `, [c.id, thresholdPrimary]);
+
+                const totalMatchedLectures = allMatches.length || 1;
+                let matchBadgeHtml = '';
+                if (totalMatchedLectures > 1) {
+                    matchBadgeHtml = `<span class="source-badge" style="background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4);font-weight:700;cursor:pointer" onclick="event.stopPropagation(); openMobileCardMatchesModal(${c.id})">🔗 In ${totalMatchedLectures} Vorlesungen</span>`;
+                } else {
+                    matchBadgeHtml = `<span class="source-badge" style="opacity:0.75;cursor:pointer" onclick="event.stopPropagation(); openMobileCardMatchesModal(${c.id})">🔗 1 Vorlesung</span>`;
+                }
+
+                // Vorlesungs-Quellen für diese Altfrage in der aktuellen Lerneinheit abfragen
                 const matches = queryDB(`
                     SELECT l.id as lecture_id, l.filename as lecture_name, cpm.page_number, cpm.confidence_score
                     FROM card_page_matches cpm
@@ -1355,6 +1462,7 @@
                 header.innerHTML = `
                     <div style="flex: 1; padding-right: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
                         ${blockTagHtml}
+                        ${matchBadgeHtml}
                         <span>${escapeHTML(c.question.replace(/<[^>]*>/g, '').substring(0, 75))}...</span>
                     </div>
                     <div style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">Score: ${Math.round(c.max_confidence * 100)}% &blacktriangledown;</div>
@@ -1369,6 +1477,7 @@
                 body.innerHTML = `
                     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
                         <div style="font-size:0.75rem;color:var(--text-muted)">Erschienen: ${c.appearance_count || 1}x ${trendBadge}</div>
+                        ${matchBadgeHtml}
                     </div>
                     <div style="font-weight: 600; margin-bottom: 6px; color: var(--primary);">Frage:</div>
                     <div style="margin-bottom: 12px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; line-height: 1.5;">${formattedQ}</div>
