@@ -2,70 +2,93 @@
 <html lang="de">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="apple-mobile-web-app-title" content="MedStudy Mobile">
-    <title>MedStudy Mobile Assistant</title>
+    <meta name="apple-mobile-web-app-title" content="MedStudy">
+    <meta name="theme-color" content="#0a0e1a">
+    <meta name="description" content="MedStudy Assistant – Mobile Web-App für Vorlesungen, Altfragen & Lernplan">
+    <title>MedStudy Mobile</title>
     
-    <!-- Google Fonts & SQL.js -->
-    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <!-- Google Fonts & SQL.js WebAssembly -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/sql-wasm.js"></script>
     
     <style>
         :root {
-            --bg-dark: #0a0e1a;
-            --bg-card: #13192b;
-            --bg-card-hover: #1c243b;
-            --primary: #3b82f6;
-            --primary-hover: #2563eb;
-            --accent-teal: #10b981;
-            --accent-amber: #f59e0b;
-            --accent-purple: #a855f7;
-            --accent-red: #ef4444;
-            --text-main: #f8fafc;
-            --text-muted: #94a3b8;
-            --border: rgba(255, 255, 255, 0.08);
-            --shadow-premium: 0 10px 30px -10px rgba(0, 0, 0, 0.6);
+            --bg-primary:     #0a0e1a;
+            --bg-secondary:   #111827;
+            --bg-card:        #151d30;
+            --bg-card-hover:  #1e2942;
+            --bg-input:       #0d1322;
+            --bg-modal:       #131a2c;
+
+            --primary:        #3b82f6;
+            --primary-hover:  #2563eb;
+            --accent-teal:    #10b981;
+            --accent-purple:  #8b5cf6;
+            --accent-amber:   #f59e0b;
+            --accent-red:     #ef4444;
+            --accent-cyan:    #06b6d4;
+
+            --text-main:      #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted:     #64748b;
+            --border:         rgba(255, 255, 255, 0.08);
+            --border-hover:   rgba(255, 255, 255, 0.16);
+            --shadow-sm:      0 2px 8px rgba(0, 0, 0, 0.3);
+            --shadow-md:      0 8px 24px rgba(0, 0, 0, 0.5);
+            --shadow-lg:      0 16px 40px rgba(0, 0, 0, 0.7);
+
+            --nav-height:     64px;
+            --header-height:  58px;
+            --radius-sm:      8px;
+            --radius-md:      12px;
+            --radius-lg:      18px;
+            --radius-xl:      24px;
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
-            font-family: 'Outfit', 'Inter', sans-serif;
+            font-family: 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             -webkit-tap-highlight-color: transparent;
         }
 
         body {
-            background-color: var(--bg-dark);
+            background-color: var(--bg-primary);
             color: var(--text-main);
-            padding-bottom: 90px;
             min-height: 100vh;
+            padding-bottom: calc(var(--nav-height) + env(safe-area-inset-bottom, 16px) + 20px);
+            padding-top: env(safe-area-inset-top, 0px);
+            overflow-x: hidden;
         }
 
-        /* Loader Screen */
+        /* ─── Loader Screen ────────────────────────────────────────── */
         #loader {
             position: fixed;
             inset: 0;
-            background: var(--bg-dark);
+            background: var(--bg-primary);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            z-index: 1000;
+            z-index: 9999;
             padding: 24px;
             text-align: center;
             transition: opacity 0.3s ease;
         }
 
         .spinner {
-            width: 48px;
-            height: 48px;
+            width: 44px;
+            height: 44px;
             border: 4px solid var(--border);
             border-top: 4px solid var(--primary);
             border-radius: 50%;
-            animation: spin 0.9s linear infinite;
+            animation: spin 0.8s linear infinite;
             margin-bottom: 20px;
         }
 
@@ -74,7 +97,6 @@
             100% { transform: rotate(360deg); }
         }
 
-        /* Upload Label (Native iOS Safari trigger) */
         .upload-btn {
             background: linear-gradient(135deg, var(--primary), #1d4ed8);
             border: none;
@@ -82,220 +104,376 @@
             padding: 14px 28px;
             font-size: 1rem;
             font-weight: 600;
-            border-radius: 12px;
+            border-radius: var(--radius-md);
             cursor: pointer;
-            box-shadow: var(--shadow-premium);
-            transition: transform 0.2s ease, opacity 0.2s ease;
-            margin-top: 15px;
+            box-shadow: var(--shadow-md);
             display: inline-flex;
             align-items: center;
             gap: 10px;
-            user-select: none;
+            margin-top: 18px;
+            transition: transform 0.15s ease, opacity 0.15s ease;
         }
-
         .upload-btn:active {
             transform: scale(0.97);
         }
 
-        /* Header */
+        /* ─── Top Header Bar ───────────────────────────────────────── */
         header {
-            background: rgba(19, 25, 43, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            background: rgba(19, 26, 44, 0.85);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
             border-bottom: 1px solid var(--border);
-            padding: 14px 18px;
+            padding: 10px 16px;
             position: sticky;
             top: 0;
             z-index: 100;
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: var(--header-height);
         }
 
-        h1 {
-            font-size: 1.3rem;
+        .header-brand {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+        }
+
+        .brand-logo {
+            font-size: 1.35rem;
+        }
+
+        .brand-title {
+            font-size: 1.15rem;
             font-weight: 700;
             background: linear-gradient(135deg, #60a5fa, #3b82f6);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            display: flex;
-            align-items: center;
-            gap: 8px;
+            letter-spacing: -0.01em;
+        }
+
+        .brand-badge {
+            font-size: 0.65rem;
+            padding: 2px 6px;
+            background: rgba(59, 130, 246, 0.15);
+            border: 1px solid rgba(59, 130, 246, 0.3);
+            color: #93c5fd;
+            border-radius: 6px;
+            font-weight: 600;
+            text-transform: uppercase;
         }
 
         .header-actions {
             display: flex;
-            gap: 8px;
             align-items: center;
+            gap: 8px;
         }
 
-        .save-btn {
+        .dirty-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--accent-amber);
+            display: none;
+            box-shadow: 0 0 8px var(--accent-amber);
+        }
+        .dirty-indicator.active {
+            display: inline-block;
+        }
+
+        .btn-header-save {
             background: linear-gradient(135deg, var(--accent-teal), #047857);
             border: none;
             color: white;
-            padding: 8px 14px;
-            border-radius: 8px;
+            padding: 7px 12px;
+            border-radius: var(--radius-sm);
             font-weight: 600;
+            font-size: 0.82rem;
             cursor: pointer;
             display: inline-flex;
             align-items: center;
-            gap: 6px;
-            font-size: 0.85rem;
-            transition: opacity 0.2s ease;
+            gap: 5px;
+            transition: opacity 0.2s;
         }
-
-        .save-btn:disabled {
+        .btn-header-save:disabled {
             opacity: 0.4;
             cursor: not-allowed;
         }
 
-        .reload-label {
-            background: var(--border);
-            border: 1px solid var(--border);
-            color: var(--text-main);
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-weight: 600;
-            cursor: pointer;
-            font-size: 0.85rem;
-            display: inline-flex;
+        /* ─── Bottom Navigation Bar ────────────────────────────────── */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(15, 23, 42, 0.94);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-top: 1px solid var(--border);
+            display: flex;
+            justify-content: space-around;
             align-items: center;
+            height: var(--nav-height);
+            padding-bottom: env(safe-area-inset-bottom, 0px);
+            z-index: 200;
         }
 
-        /* Main Container */
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.72rem;
+            font-weight: 600;
+            padding: 6px 0;
+            cursor: pointer;
+            transition: color 0.15s ease, transform 0.15s ease;
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: var(--primary);
+        }
+
+        .nav-icon {
+            font-size: 1.25rem;
+            margin-bottom: 2px;
+            transition: transform 0.2s ease;
+        }
+        .nav-item.active .nav-icon {
+            transform: translateY(-2px);
+        }
+
+        .nav-badge {
+            position: absolute;
+            top: 4px;
+            right: calc(50% - 18px);
+            background: var(--accent-red);
+            color: white;
+            font-size: 0.62rem;
+            padding: 1px 5px;
+            border-radius: 10px;
+            font-weight: 700;
+        }
+
+        /* ─── Main Content Container ───────────────────────────────── */
         main {
-            padding: 16px;
-            max-width: 650px;
+            padding: 14px 16px;
+            max-width: 768px;
             margin: 0 auto;
         }
 
+        .view-section {
+            display: none;
+            animation: fadeIn 0.2s ease;
+        }
+        .view-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* ─── Cards & UI Elements ──────────────────────────────────── */
         .card {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 18px;
-            margin-bottom: 16px;
-            box-shadow: var(--shadow-premium);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            margin-bottom: 14px;
+            box-shadow: var(--shadow-sm);
         }
 
-        /* Progress Bar */
-        .progress-container {
-            margin: 12px 0;
-        }
-        .progress-label {
+        .card-header {
             display: flex;
             justify-content: space-between;
-            font-size: 0.88rem;
-            color: var(--text-muted);
-            margin-bottom: 6px;
+            align-items: center;
+            margin-bottom: 12px;
         }
-        .progress-bar {
-            height: 10px;
+
+        .card-title {
+            font-size: 1rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Progress Bar & Soll-Stand */
+        .progress-track {
+            height: 12px;
             background: rgba(255, 255, 255, 0.05);
-            border-radius: 6px;
+            border-radius: 8px;
             overflow: hidden;
             border: 1px solid var(--border);
+            position: relative;
+            margin: 10px 0;
         }
+
         .progress-fill {
             height: 100%;
             background: linear-gradient(to right, var(--primary), var(--accent-teal));
-            width: 0%;
-            transition: width 0.5s ease;
+            border-radius: 8px;
+            transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
 
-        /* Stats Grid */
+        .soll-marker {
+            position: absolute;
+            top: 0;
+            bottom: 0;
+            width: 2px;
+            background: #f59e0b;
+            box-shadow: 0 0 6px #f59e0b;
+            z-index: 2;
+        }
+
+        /* Hero Stats Grid */
         .stats-grid {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: repeat(2, 1fr);
             gap: 10px;
-            margin-top: 12px;
+            margin-top: 10px;
         }
-        .stat-item {
-            background: rgba(10, 14, 26, 0.5);
-            border-radius: 12px;
-            padding: 12px;
-            text-align: center;
+        @media (min-width: 480px) {
+            .stats-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        .stat-box {
+            background: rgba(10, 14, 26, 0.55);
             border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px 12px;
+            text-align: center;
         }
-        .stat-val {
-            font-size: 1.4rem;
-            font-weight: 700;
+        .stat-value {
+            font-size: 1.35rem;
+            font-weight: 800;
             color: var(--primary);
+            line-height: 1.2;
         }
-        .stat-lbl {
-            font-size: 0.78rem;
+        .stat-label {
+            font-size: 0.72rem;
             color: var(--text-muted);
-            margin-top: 2px;
+            margin-top: 3px;
+            font-weight: 500;
         }
 
-        /* Block Header & Units */
-        .block-header {
-            background: rgba(59, 130, 246, 0.1);
-            color: #93c5fd;
-            padding: 12px 14px;
-            border-radius: 12px;
-            font-weight: 600;
-            font-size: 0.95rem;
-            margin-top: 22px;
-            margin-bottom: 10px;
-            border-left: 4px solid var(--primary);
-            border: 1px solid rgba(59, 130, 246, 0.2);
-            cursor: pointer;
+        /* Filter Pills & Search */
+        .filter-bar {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            scrollbar-width: none;
+        }
+        .filter-bar::-webkit-scrollbar {
+            display: none;
         }
 
+        .filter-pill {
+            padding: 6px 12px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            color: var(--text-secondary);
+            font-size: 0.8rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .filter-pill.active {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+
+        .search-input-box {
+            position: relative;
+            margin-bottom: 14px;
+        }
+        .search-input {
+            width: 100%;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 10px 14px 10px 38px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        .search-input:focus {
+            border-color: var(--primary);
+        }
+        .search-icon {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        /* Unit List Item */
         .unit-item {
             background: var(--bg-card);
             border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px 16px;
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
             margin-bottom: 10px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.15s ease;
+            transition: transform 0.15s ease, background-color 0.15s ease;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
         }
-
         .unit-item:active {
-            background-color: var(--bg-card-hover);
+            background: var(--bg-card-hover);
             transform: scale(0.99);
         }
 
-        .unit-info {
-            flex: 1;
-            padding-right: 12px;
+        .unit-top-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 8px;
         }
 
         .unit-title {
-            font-weight: 600;
             font-size: 0.95rem;
-            margin-bottom: 6px;
-            line-height: 1.3;
+            font-weight: 600;
+            line-height: 1.35;
+            color: var(--text-main);
         }
 
         .unit-meta {
-            font-size: 0.76rem;
-            color: var(--text-muted);
             display: flex;
-            gap: 10px;
             flex-wrap: wrap;
+            gap: 6px 10px;
+            font-size: 0.75rem;
+            color: var(--text-muted);
             align-items: center;
-        }
-
-        .unit-meta span {
-            display: inline-flex;
-            align-items: center;
-            gap: 4px;
         }
 
         .badge {
-            padding: 3px 8px;
-            border-radius: 8px;
+            padding: 2px 7px;
+            border-radius: 6px;
             font-size: 0.7rem;
-            font-weight: 600;
+            font-weight: 700;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
         }
 
         .badge-completed {
@@ -303,26 +481,34 @@
             color: #34d399;
             border: 1px solid rgba(16, 185, 129, 0.3);
         }
-
         .badge-pending {
             background: rgba(148, 163, 184, 0.12);
             color: var(--text-muted);
             border: 1px solid rgba(148, 163, 184, 0.2);
         }
-
-        .badge-unsynced {
+        .badge-inprogress {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.3);
+        }
+        .badge-anki-queue {
             background: rgba(245, 158, 11, 0.15);
             color: #fbbf24;
             border: 1px solid rgba(245, 158, 11, 0.3);
         }
+        .badge-overdue {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
 
-        /* Modal (Bottom Sheet on Mobile) */
+        /* ─── Modal / Bottom Sheet ─────────────────────────────────── */
         .modal {
             position: fixed;
             inset: 0;
             background: rgba(10, 14, 26, 0.85);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
             z-index: 1000;
             display: flex;
             align-items: flex-end;
@@ -331,51 +517,46 @@
             pointer-events: none;
             transition: opacity 0.25s ease;
         }
-
         .modal.active {
             opacity: 1;
             pointer-events: auto;
         }
 
         .modal-content {
-            background: var(--bg-card);
+            background: var(--bg-modal);
             border-top: 1px solid var(--border);
-            border-radius: 24px 24px 0 0;
+            border-radius: var(--radius-xl) var(--radius-xl) 0 0;
             width: 100%;
-            max-width: 650px;
-            max-height: 92vh;
-            overflow-y: auto;
-            padding: 20px;
+            max-width: 768px;
+            max-height: 90vh;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
             transform: translateY(100%);
             transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+            box-shadow: var(--shadow-lg);
         }
-
         .modal.active .modal-content {
             transform: translateY(0);
         }
 
         .modal-header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--border);
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 14px;
-            position: sticky;
-            top: -20px;
-            background: var(--bg-card);
-            padding: 10px 0;
-            border-bottom: 1px solid var(--border);
-            z-index: 10;
+            background: rgba(255, 255, 255, 0.02);
         }
 
         .modal-title {
-            font-size: 1.15rem;
+            font-size: 1.1rem;
             font-weight: 700;
-            padding-right: 15px;
+            padding-right: 12px;
             line-height: 1.3;
         }
 
-        .close-btn {
+        .modal-close-btn {
             background: var(--border);
             border: none;
             width: 32px;
@@ -387,100 +568,106 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
-        /* Modal Tabs */
-        .tab-nav {
+        .modal-tabs {
             display: flex;
             border-bottom: 1px solid var(--border);
-            margin-bottom: 16px;
-            gap: 8px;
+            background: rgba(0, 0, 0, 0.2);
             overflow-x: auto;
-            padding-bottom: 4px;
+            scrollbar-width: none;
         }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            padding: 8px 12px;
-            font-weight: 600;
-            font-size: 0.88rem;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            white-space: nowrap;
-            transition: all 0.2s;
-        }
-
-        .tab-btn.active {
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-
-        .tab-pane {
+        .modal-tabs::-webkit-scrollbar {
             display: none;
         }
 
-        .tab-pane.active {
+        .modal-tab-btn {
+            padding: 10px 14px;
+            background: transparent;
+            border: none;
+            border-bottom: 2px solid transparent;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            font-weight: 600;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .modal-tab-btn.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+            background: rgba(59, 130, 246, 0.08);
+        }
+
+        .modal-body {
+            padding: 16px;
+            overflow-y: auto;
+            flex: 1;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .modal-tab-pane {
+            display: none;
+        }
+        .modal-tab-pane.active {
             display: block;
         }
 
-        /* Meta Box */
-        .meta-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
+        .modal-footer {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.3);
+            display: flex;
             gap: 10px;
-            margin-bottom: 16px;
         }
 
-        .meta-box {
-            background: rgba(10, 14, 26, 0.4);
-            border-radius: 10px;
-            padding: 10px;
-            border: 1px solid var(--border);
-        }
-
-        .meta-box-lbl {
-            font-size: 0.72rem;
-            color: var(--text-muted);
-        }
-
-        .meta-box-val {
-            font-weight: 600;
-            margin-top: 2px;
-            font-size: 0.9rem;
-        }
-
-        /* Clinical Facts Cards */
+        /* ─── Altfragen & Facts Components ─────────────────────────── */
         .fact-card {
-            background: rgba(10, 14, 26, 0.35);
+            background: rgba(10, 14, 26, 0.45);
             border-left: 4px solid var(--primary);
-            padding: 12px;
-            border-radius: 0 12px 12px 0;
-            margin-bottom: 10px;
-            font-size: 0.88rem;
-            line-height: 1.45;
             border-top: 1px solid var(--border);
             border-right: 1px solid var(--border);
             border-bottom: 1px solid var(--border);
+            padding: 12px;
+            border-radius: 0 var(--radius-md) var(--radius-md) 0;
+            margin-bottom: 10px;
+            font-size: 0.88rem;
+            line-height: 1.45;
         }
-
         .fact-card.f-symptom { border-left-color: var(--accent-purple); }
         .fact-card.f-diagnose { border-left-color: var(--primary); }
         .fact-card.f-therapie { border-left-color: var(--accent-teal); }
-        .fact-card.f-medikament { border-left-color: #06b6d4; }
+        .fact-card.f-medikament { border-left-color: var(--accent-cyan); }
         .fact-card.f-notfall { border-left-color: var(--accent-red); }
 
-        .fact-badge {
-            font-size: 0.68rem;
-            text-transform: uppercase;
-            font-weight: 700;
-            margin-bottom: 4px;
-            display: inline-block;
-            letter-spacing: 0.05em;
+        .card-accordion {
+            background: rgba(10, 14, 26, 0.45);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            margin-bottom: 10px;
+            overflow: hidden;
         }
 
-        /* Source Badges */
+        .card-acc-header {
+            padding: 12px 14px;
+            cursor: pointer;
+            background: rgba(255, 255, 255, 0.02);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-acc-body {
+            display: none;
+            padding: 14px;
+            border-top: 1px solid var(--border);
+            background: rgba(0, 0, 0, 0.25);
+            font-size: 0.88rem;
+            line-height: 1.5;
+        }
+
         .source-badge {
             display: inline-flex;
             align-items: center;
@@ -491,106 +678,109 @@
             font-weight: 500;
             margin-top: 6px;
             margin-right: 6px;
-        }
-
-        .source-badge-pdf {
             background: rgba(59, 130, 246, 0.15);
             color: #60a5fa;
             border: 1px solid rgba(59, 130, 246, 0.3);
         }
 
-        .source-badge-book {
-            background: rgba(16, 185, 129, 0.15);
-            color: #34d399;
-            border: 1px solid rgba(16, 185, 129, 0.3);
-        }
-
-        /* Altfragen Accordion */
-        .card-accordion {
-            background: rgba(10, 14, 26, 0.35);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            margin-bottom: 10px;
-            overflow: hidden;
-        }
-
-        .card-acc-header {
-            padding: 12px 14px;
-            font-size: 0.88rem;
+        .btn-couple {
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            border: 1px solid transparent;
             cursor: pointer;
-            background: rgba(255, 255, 255, 0.02);
-            font-weight: 500;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.15s ease;
+        }
+        .btn-couple-on {
+            background: rgba(16, 185, 129, 0.2);
+            color: #34d399;
+            border-color: rgba(16, 185, 129, 0.4);
+        }
+        .btn-couple-off {
+            background: rgba(239, 68, 68, 0.2);
+            color: #f87171;
+            border-color: rgba(239, 68, 68, 0.4);
+        }
+
+        /* ─── Notes Editor ─────────────────────────────────────────── */
+        .notes-textarea {
+            width: 100%;
+            min-height: 180px;
+            background: var(--bg-input);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            color: var(--text-main);
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+            outline: none;
+        }
+        .notes-textarea:focus {
+            border-color: var(--primary);
+        }
+
+        /* ─── Slide Text Viewer ────────────────────────────────────── */
+        .slide-text-item {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            margin-bottom: 10px;
+        }
+        .slide-text-header {
+            font-size: 0.78rem;
+            font-weight: 700;
+            color: var(--primary);
+            margin-bottom: 6px;
             display: flex;
             justify-content: space-between;
-            align-items: center;
         }
-
-        .card-acc-body {
-            display: none;
-            padding: 14px;
-            border-top: 1px solid var(--border);
-            font-size: 0.88rem;
-            background: rgba(0, 0, 0, 0.2);
+        .slide-text-content {
+            font-size: 0.84rem;
+            color: var(--text-secondary);
             line-height: 1.45;
+            white-space: pre-wrap;
+            word-break: break-word;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
-        /* Quiz Question Item */
-        .quiz-item {
-            background: rgba(10, 14, 26, 0.4);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 14px;
-            margin-bottom: 12px;
+        /* ─── Toast Notifications ──────────────────────────────────── */
+        #toast {
+            position: fixed;
+            bottom: calc(var(--nav-height) + 20px);
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background: #1e293b;
+            border: 1px solid var(--border-hover);
+            padding: 10px 20px;
+            border-radius: var(--radius-md);
+            font-size: 0.88rem;
+            font-weight: 500;
+            box-shadow: var(--shadow-lg);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 3000;
+            text-align: center;
+            white-space: nowrap;
+            pointer-events: none;
+        }
+        #toast.active {
+            transform: translateX(-50%) translateY(0);
         }
 
-        .quiz-option {
-            background: rgba(255, 255, 255, 0.03);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 10px 12px;
-            margin-top: 8px;
-            font-size: 0.85rem;
-            cursor: pointer;
-            transition: background 0.2s;
-        }
-
-        .quiz-option.correct {
-            background: rgba(16, 185, 129, 0.2) !important;
-            border-color: rgba(16, 185, 129, 0.5) !important;
-            color: #34d399;
-            font-weight: 600;
-        }
-
-        .quiz-option.wrong {
-            background: rgba(239, 68, 68, 0.2) !important;
-            border-color: rgba(239, 68, 68, 0.5) !important;
-            color: #fca5a5;
-        }
-
-        .quiz-explanation {
-            margin-top: 10px;
-            padding: 10px;
-            background: rgba(59, 130, 246, 0.1);
-            border-radius: 8px;
-            font-size: 0.82rem;
-            color: #93c5fd;
-            display: none;
-        }
-
-        /* Actions Bar */
-        .action-container {
-            margin-top: 20px;
-            border-top: 1px solid var(--border);
-            padding-top: 15px;
-            display: flex;
-            gap: 10px;
-        }
-
-        .action-button {
+        /* ─── Quick Buttons ────────────────────────────────────────── */
+        .btn-action-primary {
             flex: 1;
-            padding: 12px;
-            border-radius: 10px;
+            background: linear-gradient(135deg, var(--accent-teal), #047857);
             border: none;
+            color: white;
+            padding: 12px;
+            border-radius: var(--radius-md);
             font-weight: 600;
             font-size: 0.95rem;
             cursor: pointer;
@@ -600,390 +790,429 @@
             justify-content: center;
             gap: 6px;
         }
-
-        .btn-complete {
-            background: linear-gradient(135deg, var(--accent-teal), #047857);
-            color: white;
-        }
-
-        .btn-reset {
+        .btn-action-secondary {
             background: var(--border);
-            color: var(--text-main);
-        }
-
-        /* Time Quick Selection Buttons */
-        .time-quick-btn {
-            flex: 1;
-            background: rgba(255, 255, 255, 0.05);
             border: 1px solid var(--border);
             color: var(--text-main);
-            padding: 8px 10px;
-            border-radius: 8px;
-            font-size: 0.85rem;
+            padding: 12px 16px;
+            border-radius: var(--radius-md);
             font-weight: 600;
+            font-size: 0.9rem;
             cursor: pointer;
-        }
-        .time-quick-btn:active {
-            background: var(--primary);
-        }
-
-        /* Toast */
-        #toast {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%) translateY(100px);
-            background: #1e293b;
-            border: 1px solid var(--border);
-            padding: 12px 24px;
-            border-radius: 12px;
-            font-weight: 500;
-            box-shadow: var(--shadow-premium);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-            z-index: 2000;
-            text-align: center;
-            white-space: nowrap;
-        }
-
-        #toast.active {
-            transform: translateX(-50%) translateY(0);
         }
     </style>
 </head>
 <body>
 
-    <!-- Load / Database Pick Panel -->
+    <!-- ─── Loader Screen / Initial DB Picker ─────────────────────── -->
     <div id="loader">
         <div class="spinner" id="loader-spinner" style="display: none;"></div>
-        <h2 style="font-size: 1.5rem; margin-bottom: 8px;">🩺 MedStudy Mobile</h2>
-        <p id="loader-msg" style="color: var(--text-muted); font-size: 0.9rem; max-width: 320px; margin-bottom: 16px;">
-            Wähle deine <strong>medStudy.db</strong> aus dem OneDrive-Ordner aus.
+        <div style="font-size: 2.2rem; margin-bottom: 8px;">🩺</div>
+        <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 6px;">MedStudy Mobile</h2>
+        <p id="loader-msg" style="color: var(--text-secondary); font-size: 0.88rem; max-width: 320px; line-height: 1.4; margin-bottom: 12px;">
+            Wähle deine <strong>medStudy.db</strong> aus oder lade aus dem Cache.
         </p>
         
-        <!-- NATIVE LABEL FOR IOS SAFARI -->
         <label for="db-file-input" class="upload-btn" id="db-pick-label">
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-            Datenbank laden
+            Datenbank auswählen
         </label>
         <input type="file" id="db-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept="application/octet-stream,.db,.sqlite,.sqlite3">
     </div>
 
-    <!-- Header -->
+    <!-- ─── Top Header ────────────────────────────────────────────── -->
     <header>
-        <h1>🩺 MedStudy Mobile</h1>
+        <div class="header-brand" onclick="switchView('dashboard')">
+            <span class="brand-logo">🩺</span>
+            <div>
+                <span class="brand-title">MedStudy</span>
+                <span class="brand-badge">Mobile</span>
+            </div>
+        </div>
         <div class="header-actions">
-            <label for="db-file-input" class="reload-label" title="Neue DB-Datei laden">🔄 DB</label>
-            <button class="save-btn" id="save-db-btn" disabled>
-                💾 Speichern
+            <span class="dirty-indicator" id="dirty-indicator" title="Ungespeicherte Änderungen"></span>
+            <button class="btn-header-save" id="header-save-btn" onclick="saveDatabaseToFile()" disabled>
+                💾 <span>Speichern</span>
             </button>
         </div>
     </header>
 
-    <!-- Main Container -->
-    <main id="app-content" style="display: none;">
+    <!-- ─── Main Content ──────────────────────────────────────────── -->
+    <main>
         
-        <!-- Dashboard Card -->
-        <div class="card">
-            <h3 style="font-size: 1.05rem; margin-bottom: 8px; font-weight: 600;">Lernfortschritt</h3>
+        <!-- ─── 1. VIEW: DASHBOARD ─────────────────────────────────── -->
+        <section id="view-dashboard" class="view-section active">
             
-            <div class="progress-container">
-                <div class="progress-label">
-                    <span id="progress-percent">0% abgeschlossen</span>
-                    <span id="progress-count">0/0 Einheiten</span>
+            <!-- Progress Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">🚀 Dein Lernfortschritt</div>
+                    <span id="exam-countdown-badge" class="badge badge-inprogress">SIP</span>
                 </div>
-                <div class="progress-bar">
-                    <div class="progress-fill" id="progress-fill"></div>
+                
+                <div style="display: flex; justify-content: space-between; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: 4px;">
+                    <span id="dash-progress-pct">0% abgeschlossen</span>
+                    <span id="dash-progress-count">0/0 Einheiten</span>
+                </div>
+                <div class="progress-track">
+                    <div class="progress-fill" id="dash-progress-bar" style="width: 0%;"></div>
+                    <div class="soll-marker" id="dash-soll-marker" style="left: 0%;" title="Soll-Stand"></div>
+                </div>
+                <div id="dash-soll-label" style="font-size: 0.76rem; color: var(--accent-amber); margin-top: 4px;">
+                    ⏳ Berechne Lernplan...
+                </div>
+
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-completed">0</div>
+                        <div class="stat-label">Geschafft</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-streak" style="color: var(--accent-teal);">0🔥</div>
+                        <div class="stat-label">Tage Streak</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-hours" style="color: var(--accent-purple);">0h</div>
+                        <div class="stat-label">Gesamtzeit</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="stat-pending-anki" style="color: var(--accent-amber);">0</div>
+                        <div class="stat-label">Anki Queue</div>
+                    </div>
                 </div>
             </div>
 
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-val" id="stat-learned">0</div>
-                    <div class="stat-lbl">Gelernt</div>
+            <!-- Overdue Warning Card -->
+            <div class="card" id="dash-overdue-card" style="display: none; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.06);">
+                <div class="card-title" style="color: var(--accent-red); margin-bottom: 6px;">
+                    🚨 Überfällige Lerneinheiten!
                 </div>
-                <div class="stat-item">
-                    <div class="stat-val" id="stat-unsynced" style="color: var(--accent-amber);">0</div>
-                    <div class="stat-lbl">Offen für Anki</div>
+                <p id="dash-overdue-text" style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4;"></p>
+            </div>
+
+            <!-- Today's Plan -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📅 Heutiger Lernplan</div>
+                    <span id="dash-today-count" class="badge badge-inprogress">0 Einheiten</span>
+                </div>
+                <div id="dash-today-list"></div>
+            </div>
+
+            <!-- Block Progress -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📚 Blöcke Übersicht</div>
+                </div>
+                <div id="dash-blocks-list"></div>
+            </div>
+
+        </section>
+
+        <!-- ─── 2. VIEW: LERNEINHEITEN ─────────────────────────────── -->
+        <section id="view-units" class="view-section">
+            
+            <div class="search-input-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="units-search" class="search-input" placeholder="Lerneinheit oder Stichwort suchen..." oninput="renderUnitsList()">
+            </div>
+
+            <div class="filter-bar" id="units-block-filters">
+                <button class="filter-pill active" onclick="setUnitBlockFilter('all')">Alle Blöcke</button>
+            </div>
+
+            <div class="filter-bar" style="margin-bottom: 14px;">
+                <button class="filter-pill active" id="unit-status-all" onclick="setUnitStatusFilter('all')">Alle</button>
+                <button class="filter-pill" id="unit-status-open" onclick="setUnitStatusFilter('open')">Offen</button>
+                <button class="filter-pill" id="unit-status-inprogress" onclick="setUnitStatusFilter('inprogress')">In Arbeit</button>
+                <button class="filter-pill" id="unit-status-completed" onclick="setUnitStatusFilter('completed')">Erledigt</button>
+            </div>
+
+            <div id="units-container"></div>
+
+        </section>
+
+        <!-- ─── 3. VIEW: ALTFRAGEN-EXPLORER ────────────────────────── -->
+        <section id="view-cards" class="view-section">
+            
+            <div class="search-input-box">
+                <span class="search-icon">🔍</span>
+                <input type="text" id="cards-search" class="search-input" placeholder="Altfrage nach Stichwort durchsuchen..." oninput="renderCardsList()">
+            </div>
+
+            <div class="filter-bar" id="cards-block-filters">
+                <button class="filter-pill active" onclick="setCardBlockFilter('all')">Alle Blöcke</button>
+            </div>
+
+            <div class="filter-bar">
+                <button class="filter-pill active" id="card-couple-all" onclick="setCardCoupleFilter('all')">Alle</button>
+                <button class="filter-pill" id="card-couple-linked" onclick="setCardCoupleFilter('linked')">🔗 Gekoppelt</button>
+                <button class="filter-pill" id="card-couple-candidate" onclick="setCardCoupleFilter('candidate')">💡 Kandidaten</button>
+                <button class="filter-pill" id="card-couple-manual" onclick="setCardCoupleFilter('manual')">🖐️ Manuell</button>
+            </div>
+
+            <div id="cards-count-info" style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px;"></div>
+            <div id="cards-container"></div>
+
+        </section>
+
+        <!-- ─── 4. VIEW: QUIZ ──────────────────────────────────────── -->
+        <section id="view-quiz" class="view-section">
+            
+            <div class="card">
+                <div class="card-title">🧠 MedStudy KI-Quiz</div>
+                <p style="font-size: 0.85rem; color: var(--text-secondary); margin: 8px 0 14px 0;">
+                    Teste dein Wissen mit KI-generierten Fragen und klinischen Fällen.
+                </p>
+
+                <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                    <select id="quiz-block-select" class="search-input" style="padding-left: 12px;">
+                        <option value="all">Alle Blöcke (Zufall)</option>
+                    </select>
+                    <button class="btn-action-primary" style="flex: 0 0 auto; padding: 0 18px;" onclick="startQuiz()">
+                        Quiz starten
+                    </button>
                 </div>
             </div>
-        </div>
 
-        <!-- Overdue Warnings -->
-        <div class="card" id="overdue-card" style="display: none; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.05);">
-            <h3 style="color: var(--accent-red); font-size: 0.95rem; margin-bottom: 6px; display: flex; align-items: center; gap: 6px;">
-                🚨 Überfällige Lerneinheiten!
-            </h3>
-            <p id="overdue-text" style="font-size: 0.85rem; color: var(--text-muted);"></p>
-        </div>
+            <div id="quiz-active-area" style="display: none;"></div>
 
-        <!-- Section Learning Units -->
-        <h3 style="font-size: 1.05rem; margin-top: 22px; margin-bottom: 12px; font-weight: 600;">Deine Lerneinheiten</h3>
-        <div id="units-list"></div>
+        </section>
+
+        <!-- ─── 5. VIEW: SYNC & DATENBANK-MANAGER ──────────────────── -->
+        <section id="view-sync" class="view-section">
+            
+            <!-- Database Status -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">💾 Datenbank-Status</div>
+                    <span id="db-status-badge" class="badge badge-completed">Bereit</span>
+                </div>
+                
+                <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);" id="db-info-stats">
+                    Keine Datenbank geladen.
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 14px;">
+                    <button class="btn-action-primary" onclick="saveDatabaseToFile()">
+                        💾 DB herunterladen
+                    </button>
+                    <label for="db-file-input" class="btn-action-secondary" style="text-align: center; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                        🔄 Neu laden
+                    </label>
+                </div>
+            </div>
+
+            <!-- Anki Queue Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📥 Anki-Warteschlange (Mobil vorgemerkt)</div>
+                    <span id="anki-queue-count" class="badge badge-anki-queue">0 Aufträge</span>
+                </div>
+                
+                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 10px;">
+                    Alle Lerneinheiten, die du mobil als gelernt markierst oder in die Anki-Queue einreihst, werden hier gesammelt. Sobald du MedStudy am PC startest, arbeitet das Backend alle Aufträge vollautomatisch ab!
+                </p>
+
+                <div id="anki-queue-list"></div>
+            </div>
+
+            <!-- Smart Merge Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">✨ Smart Multi-Version Merge (Konfliktlösung)</div>
+                </div>
+                
+                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 12px;">
+                    Hast du am PC und am Tablet gelernt oder eine OneDrive-Konfliktdatei (z.B. <code>medStudy-Tobi-NB.db</code>)?
+                    Wähle die zweite DB-Datei aus – der Merge übernimmt alle Fortschritte, Altfragen-Kopplungen und Sessions nach dem <em>Last-Write-Wins</em>-Prinzip.
+                </p>
+
+                <label for="merge-file-input" class="btn-action-secondary" style="display: block; text-align: center; cursor: pointer; border-color: var(--primary); color: #93c5fd;">
+                    ✨ Zweite DB auswählen & zusammenführen
+                </label>
+                <input type="file" id="merge-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3">
+
+                <div id="merge-result-box" style="display: none; margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); font-size: 0.84rem; color: #a7f3d0;"></div>
+            </div>
+
+        </section>
 
     </main>
 
-    <!-- Slide-Up Detail Modal -->
-    <div class="modal" id="detail-modal">
+    <!-- ─── Bottom Navigation ─────────────────────────────────────── -->
+    <nav class="bottom-nav">
+        <div class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')">
+            <span class="nav-icon">🏠</span>
+            <span>Dashboard</span>
+        </div>
+        <div class="nav-item" id="nav-units" onclick="switchView('units')">
+            <span class="nav-icon">📚</span>
+            <span>Einheiten</span>
+        </div>
+        <div class="nav-item" id="nav-cards" onclick="switchView('cards')">
+            <span class="nav-icon">🔗</span>
+            <span>Altfragen</span>
+        </div>
+        <div class="nav-item" id="nav-quiz" onclick="switchView('quiz')">
+            <span class="nav-icon">🧠</span>
+            <span>Quiz</span>
+        </div>
+        <div class="nav-item" id="nav-sync" onclick="switchView('sync')">
+            <span class="nav-icon">💾</span>
+            <span>Sync & DB</span>
+            <span class="nav-badge" id="nav-dirty-badge" style="display: none;">!</span>
+        </div>
+    </nav>
+
+    <!-- ─── Unit Detail Bottom Sheet / Modal ──────────────────────── -->
+    <div class="modal" id="unit-modal">
         <div class="modal-content">
             <div class="modal-header">
-                <div class="modal-title" id="m-title">Lerneinheit Details</div>
-                <button class="close-btn" onclick="closeModal()">&times;</button>
+                <div class="modal-title" id="m-unit-title">Lerneinheit</div>
+                <button class="modal-close-btn" onclick="closeUnitModal()">&times;</button>
             </div>
 
-            <!-- Tab Navigation -->
-            <div class="tab-nav">
-                <button class="tab-btn active" onclick="switchTab('tab-summary')">Info</button>
-                <button class="tab-btn" onclick="switchTab('tab-facts')">Facts (<span id="m-facts-count">0</span>)</button>
-                <button class="tab-btn" onclick="switchTab('tab-cards')">Altfragen (<span id="m-cards-count">0</span>)</button>
-                <button class="tab-btn" onclick="switchTab('tab-quiz')">🧠 Quiz (<span id="m-quiz-count">0</span>)</button>
+            <div class="modal-tabs">
+                <button class="modal-tab-btn active" onclick="switchModalTab('tab-unit-info')">Info</button>
+                <button class="modal-tab-btn" onclick="switchModalTab('tab-unit-facts')">Facts (<span id="m-count-facts">0</span>)</button>
+                <button class="modal-tab-btn" onclick="switchModalTab('tab-unit-slides')">Folientexte</button>
+                <button class="modal-tab-btn" onclick="switchModalTab('tab-unit-cards')">Altfragen (<span id="m-count-cards">0</span>)</button>
+                <button class="modal-tab-btn" onclick="switchModalTab('tab-unit-notes')">Notizen</button>
+                <button class="modal-tab-btn" onclick="switchModalTab('tab-unit-quiz')">Quiz</button>
             </div>
 
-            <!-- Tab Content: Summary -->
-            <div class="tab-pane active" id="tab-summary">
-                <div class="meta-grid">
-                    <div class="meta-box">
-                        <div class="meta-box-lbl">Klinische Relevanz</div>
-                        <div class="meta-box-val" id="m-rel-clinical">3/5</div>
-                    </div>
-                    <div class="meta-box">
-                        <div class="meta-box-lbl">Prüfungsrelevanz</div>
-                        <div class="meta-box-val" id="m-rel-exam">3/5</div>
-                    </div>
-                </div>
+            <div class="modal-body">
                 
-                <h4 style="font-size: 0.92rem; margin-bottom: 6px; font-weight: 600;">Zusammenfassung</h4>
-                <p id="m-summary" style="font-size: 0.86rem; color: var(--text-muted); line-height: 1.45; margin-bottom: 16px;"></p>
+                <!-- Tab: Info -->
+                <div class="modal-tab-pane active" id="tab-unit-info">
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
+                        <div class="stat-box">
+                            <div class="stat-label">Klinische Relevanz</div>
+                            <div class="stat-value" id="m-unit-rel-clinical" style="font-size: 1.1rem;">3/5</div>
+                        </div>
+                        <div class="stat-box">
+                            <div class="stat-label">Prüfungsrelevanz</div>
+                            <div class="stat-value" id="m-unit-rel-exam" style="font-size: 1.1rem; color: var(--accent-amber);">3/5</div>
+                        </div>
+                    </div>
 
-                <h4 style="font-size: 0.92rem; margin-bottom: 6px; font-weight: 600;">Lernziele</h4>
-                <ul id="m-objectives" style="font-size: 0.86rem; color: var(--text-muted); padding-left: 20px; line-height: 1.45;"></ul>
+                    <div id="m-unit-rel-note" style="font-size: 0.85rem; color: var(--text-secondary); background: rgba(0,0,0,0.25); padding: 10px; border-radius: var(--radius-md); margin-bottom: 14px; line-height: 1.45;"></div>
+
+                    <h4 style="font-size: 0.88rem; font-weight: 700; margin-bottom: 6px;">🎯 Lernziele</h4>
+                    <ul id="m-unit-objectives" style="padding-left: 18px; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 14px;"></ul>
+
+                    <h4 style="font-size: 0.88rem; font-weight: 700; margin-bottom: 6px;">📄 Zugehörige Vorlesungen</h4>
+                    <div id="m-unit-lectures" style="font-size: 0.82rem; color: var(--text-muted);"></div>
+                </div>
+
+                <!-- Tab: Facts -->
+                <div class="modal-tab-pane" id="tab-unit-facts">
+                    <div id="m-unit-facts-list"></div>
+                </div>
+
+                <!-- Tab: Folientexte -->
+                <div class="modal-tab-pane" id="tab-unit-slides">
+                    <div class="search-input-box" style="margin-bottom: 10px;">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="slide-search" class="search-input" placeholder="In Folientexten suchen..." oninput="filterSlideTexts()">
+                    </div>
+                    <div id="m-unit-slides-list"></div>
+                </div>
+
+                <!-- Tab: Altfragen -->
+                <div class="modal-tab-pane" id="tab-unit-cards">
+                    <div id="m-unit-cards-list"></div>
+                </div>
+
+                <!-- Tab: Notizen -->
+                <div class="modal-tab-pane" id="tab-unit-notes">
+                    <p style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 8px;">
+                        Notizen werden automatisch in der Datenbank gespeichert.
+                    </p>
+                    <textarea id="m-unit-notes-text" class="notes-textarea" placeholder="Eigene Vorlesungsnotizen hier eingeben..." oninput="saveCurrentUnitNotes()"></textarea>
+                </div>
+
+                <!-- Tab: Quiz -->
+                <div class="modal-tab-pane" id="tab-unit-quiz">
+                    <div id="m-unit-quiz-list"></div>
+                </div>
+
             </div>
 
-            <!-- Tab Content: Clinical Facts -->
-            <div class="tab-pane" id="tab-facts">
-                <div id="m-facts-list"></div>
-            </div>
-
-            <!-- Tab Content: Altfragen (Anki) -->
-            <div class="tab-pane" id="tab-cards">
-                <div id="m-cards-list"></div>
-            </div>
-
-            <!-- Tab Content: Quiz -->
-            <div class="tab-pane" id="tab-quiz">
-                <div id="m-quiz-list"></div>
-            </div>
-
-            <!-- Action buttons -->
-            <div class="action-container" id="m-actions"></div>
+            <div class="modal-footer" id="m-unit-footer-actions"></div>
         </div>
     </div>
 
-    <!-- Custom Time Modal (Smooth iOS replacement for prompt) -->
-    <div class="modal" id="time-modal" style="z-index: 1100;">
-        <div class="modal-content" style="max-width: 420px; padding: 22px; border-radius: 20px;">
-            <h3 style="font-size: 1.1rem; margin-bottom: 8px; font-weight: 700;">⏱️ Lernzeit eintragen</h3>
-            <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 16px;">
-                Wie viele Minuten hast du für diese Einheit gelernt?
-            </p>
-
-            <div style="display: flex; gap: 8px; margin-bottom: 14px;">
-                <button class="time-quick-btn" onclick="setCompletionMinutes(30)">30 Min.</button>
-                <button class="time-quick-btn" onclick="setCompletionMinutes(45)">45 Min.</button>
-                <button class="time-quick-btn" onclick="setCompletionMinutes(60)">60 Min.</button>
-                <button class="time-quick-btn" onclick="setCompletionMinutes(90)">90 Min.</button>
+    <!-- ─── Time Selection Modal ──────────────────────────────────── -->
+    <div class="modal" id="time-modal">
+        <div class="modal-content" style="max-width: 480px;">
+            <div class="modal-header">
+                <div class="modal-title">⏱️ Lerneinheit abschließen</div>
+                <button class="modal-close-btn" onclick="closeTimeModal()">&times;</button>
             </div>
+            <div class="modal-body">
+                <p style="font-size: 0.88rem; color: var(--text-secondary); margin-bottom: 14px;">
+                    Wie viele Minuten hast du für diese Einheit gelernt?
+                </p>
 
-            <input type="number" id="input-completion-time" value="45" min="1" max="600" style="width: 100%; padding: 12px; font-size: 1.2rem; font-weight: 700; border-radius: 10px; border: 1px solid var(--border); background: rgba(10, 14, 26, 0.6); color: white; margin-bottom: 18px; text-align: center;">
+                <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                    <button class="filter-pill" onclick="setCompletionMinutes(15)">15m</button>
+                    <button class="filter-pill" onclick="setCompletionMinutes(30)">30m</button>
+                    <button class="filter-pill active" onclick="setCompletionMinutes(45)">45m</button>
+                    <button class="filter-pill" onclick="setCompletionMinutes(60)">60m</button>
+                    <button class="filter-pill" onclick="setCompletionMinutes(90)">90m</button>
+                </div>
 
-            <div style="display: flex; gap: 10px;">
-                <button class="action-button btn-reset" onclick="closeTimeModal()">Abbrechen</button>
-                <button class="action-button btn-complete" onclick="confirmCompleteUnit()">✅ Speichern</button>
+                <div class="search-input-box" style="margin-bottom: 14px;">
+                    <input type="number" id="input-completion-time" class="search-input" style="padding-left: 14px; font-size: 1.1rem; font-weight: 700;" value="45">
+                </div>
+
+                <label style="display: flex; align-items: center; gap: 10px; font-size: 0.84rem; cursor: pointer; color: var(--text-secondary); background: rgba(0,0,0,0.25); padding: 10px; border-radius: var(--radius-md);">
+                    <input type="checkbox" id="check-anki-queue-auto" checked style="width: 18px; height: 18px; accent-color: var(--primary);">
+                    <span>📥 Für <strong>Anki-Synchronisierung</strong> vormerken</span>
+                </label>
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action-primary" onclick="confirmCompleteUnit()">
+                    🏁 Jetzt abschließen
+                </button>
             </div>
         </div>
     </div>
 
-    <!-- Slide Text Preview Modal -->
-    <div class="modal" id="slide-modal" style="z-index: 1200;">
-        <div class="modal-content" style="max-width: 550px; padding: 22px; border-radius: 20px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-                <h3 id="slide-modal-title" style="font-size: 1.05rem; font-weight: 700; color: var(--primary);">📄 Folientext</h3>
-                <button class="close-btn" onclick="closeSlideModal()">&times;</button>
-            </div>
-            <div id="slide-modal-text" style="font-size: 0.88rem; color: var(--text-main); line-height: 1.5; background: rgba(0,0,0,0.3); padding: 14px; border-radius: 12px; max-height: 60vh; overflow-y: auto; white-space: pre-wrap; word-break: break-word;"></div>
-        </div>
-    </div>
+    <!-- ─── Toast Banner ──────────────────────────────────────────── -->
+    <div id="toast"></div>
 
-    <!-- Toast Notice -->
-    <div id="toast">Änderungen gespeichert!</div>
-
+    <!-- ─── App Logic (JavaScript) ────────────────────────────────── -->
     <script>
         let db = null;
+        let isDirty = false;
         let activeUnitId = null;
-        let selectedFile = null;
         let pendingCompletionUnitId = null;
+        let currentView = 'dashboard';
 
-        function formatCardContent(html) {
-            if (!html) return '';
-            let str = html;
+        let currentUnitBlockFilter = 'all';
+        let currentUnitStatusFilter = 'all';
+        let currentCardBlockFilter = 'all';
+        let currentCardCoupleFilter = 'all';
 
-            // Convert div and p blocks into linebreaks
-            str = str.replace(/<\/div>\s*<div>/gi, '<br>');
-            str = str.replace(/<div[^>]*>/gi, '');
-            str = str.replace(/<\/div>/gi, '<br>');
-            str = str.replace(/<\/p>\s*<p>/gi, '<br><br>');
-            str = str.replace(/<p[^>]*>/gi, '');
-            str = str.replace(/<\/p>/gi, '<br>');
+        const IDB_NAME = "MedStudyMobileApp";
+        const IDB_STORE = "database";
+        const IDB_KEY = "medstudy_sqlite_db";
 
-            // Separate bullet points (e.g. - Item, • Item, 1. Item) onto new lines
-            str = str.replace(/([^\n<])(\s*[-•]\s+)/g, '$1<br>$2');
-
-            // Replace plain text \n with <br>
-            str = str.replace(/\r?\n/g, '<br>');
-
-            // Clean up excessive linebreaks
-            str = str.replace(/(<br\s*\/?>\s*){3,}/gi, '<br><br>');
-
-            return str;
-        }
-
-        function openSlideTextModal(lectureId, pageNum, lectureName) {
-            const pageRow = queryDB("SELECT text_content, image_description FROM lecture_pages WHERE lecture_id = ? AND page_number = ?", [lectureId, pageNum])[0];
-            const text = pageRow ? (pageRow.text_content || pageRow.image_description || "Kein Folientext extrahiert.") : "Folientext in der Datenbank nicht gefunden.";
-            
-            document.getElementById('slide-modal-title').innerText = `📄 ${lectureName} (Folie ${pageNum})`;
-            document.getElementById('slide-modal-text').innerText = text;
-            document.getElementById('slide-modal').classList.add('active');
-            try { history.pushState({ modal: 'slide' }, ''); } catch(e) {}
-        }
-
-        function closeSlideModal() {
-            document.getElementById('slide-modal').classList.remove('active');
-        }
-
-        function openMobileCardMatchesModal(cardId) {
-            const cardRows = queryDB("SELECT * FROM anki_cards WHERE id = ?", [cardId]);
-            if (cardRows.length === 0) return;
-            const card = cardRows[0];
-
-            const primaryRow = queryDB("SELECT value FROM settings WHERE key='match_threshold_primary'");
-            const thresholdPrimary = primaryRow.length > 0 ? parseFloat(primaryRow[0].value) || 0.55 : 0.55;
-
-            const matches = queryDB(`
-                SELECT DISTINCT l.id as lecture_id, l.filename as lecture_name, lu.id as unit_id, lu.title as unit_title, b.name as block_name, cpm.page_number, cpm.confidence_score, cpm.is_manual
-                FROM card_page_matches cpm
-                JOIN lectures l ON cpm.lecture_id = l.id
-                LEFT JOIN unit_lectures ul ON l.id = ul.lecture_id
-                LEFT JOIN learning_units lu ON ul.unit_id = lu.id
-                LEFT JOIN blocks b ON lu.block_id = b.id
-                WHERE cpm.card_id = ?
-                  AND ((cpm.confidence_score >= ? AND (cpm.is_manual IS NULL OR cpm.is_manual != -1)) OR cpm.is_manual = 1)
-                ORDER BY lu.id IS NULL, lu.id, l.id, cpm.confidence_score DESC
-            `, [cardId, thresholdPrimary]);
-
-            const grouped = {};
-            matches.forEach(m => {
-                const key = m.lecture_id;
-                if (!grouped[key]) {
-                    grouped[key] = {
-                        lecture_id: m.lecture_id,
-                        lecture_name: m.lecture_name,
-                        unit_id: m.unit_id,
-                        unit_title: m.unit_title || 'Keine Lerneinheit',
-                        block_name: m.block_name || '',
-                        max_score: m.confidence_score,
-                        is_manual: m.is_manual,
-                        pages: []
-                    };
-                }
-                if (!grouped[key].pages.includes(m.page_number)) {
-                    grouped[key].pages.push(m.page_number);
-                }
-            });
-
-            const groupedList = Object.values(grouped);
-
-            let html = `
-            <div style="margin-bottom: 12px; background: rgba(0,0,0,0.3); padding: 10px; border-radius: 8px;">
-                <div style="font-size: 0.72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase;">Altfrage #${card.id}</div>
-                <div style="font-size: 0.88rem; margin-top: 4px; line-height: 1.4;">${escapeHTML(card.question.replace(/<[^>]*>/g, ''))}</div>
-            </div>
-            <div style="font-size: 0.82rem; font-weight: 700; color: var(--text-muted); margin-bottom: 8px;">
-                Gematcht in ${groupedList.length} Vorlesung${groupedList.length !== 1 ? 'en' : ''}:
-            </div>
-            <div style="display: flex; flex-direction: column; gap: 8px;">
-            `;
-
-            groupedList.forEach(g => {
-                const scorePct = Math.round(g.max_score * 100);
-                const safeLecName = escapeHTML(g.lecture_name.replace('.pdf', '')).replace(/'/g, "\\'");
-                html += `
-                <div style="padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border); border-radius: 8px;">
-                    <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                        <div>
-                            ${g.block_name ? `<span style="font-size: 0.68rem; padding: 1px 5px; border-radius: 4px; background: rgba(168,85,247,0.15); color: #c084fc;">${escapeHTML(g.block_name)}</span>` : ''}
-                            <div style="font-size: 0.88rem; font-weight: 600; margin-top: 2px;">${escapeHTML(g.unit_title)}</div>
-                            <div style="font-size: 0.78rem; color: var(--text-muted); font-family: monospace;">📄 ${escapeHTML(g.lecture_name)}</div>
-                        </div>
-                        <span style="font-size: 0.72rem; padding: 2px 6px; border-radius: 4px; background: rgba(59,130,246,0.15); color: #60a5fa;">${scorePct}% Match</span>
-                    </div>
-                    <div style="margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px;">
-                        ${g.pages.map(p => `
-                            <span class="source-badge source-badge-pdf" style="cursor:pointer" onclick="openSlideTextModal(${g.lecture_id}, ${p}, '${safeLecName}')">
-                                📄 Folie ${p} (Folientext)
-                            </span>
-                        `).join('')}
-                    </div>
-                </div>
-                `;
-            });
-            html += `</div>`;
-
-            document.getElementById('slide-modal-title').innerText = `🔗 Vorlesungs-Zuordnungen (${groupedList.length})`;
-            document.getElementById('slide-modal-text').innerHTML = html;
-            document.getElementById('slide-modal').classList.add('active');
-            try { history.pushState({ modal: 'matches' }, ''); } catch(e) {}
-        }
-
-        window.addEventListener('popstate', (e) => {
-            closeModal();
-            closeSlideModal();
-            closeTimeModal();
-        });
-
-        // Friendly error handler for OneDrive App preview frame
-        window.onerror = function(msg, url, line) {
-            const loaderMsg = document.getElementById('loader-msg');
-            if (loaderMsg) {
-                loaderMsg.innerHTML = `
-                <div style="color:var(--accent-red);font-weight:600;margin-bottom:8px">⚠️ Vorschaufenster-Sperre erkannt</div>
-                <div style="font-size:0.85rem;line-height:1.4">
-                    Die OneDrive-App blockiert in ihrem internen Vorschaufenster das Ausführen von Skripten.<br><br>
-                    <strong>So klappt es sofort:</strong><br>
-                    1. Tippe in der OneDrive-App bei der Datei auf <strong>(...)</strong> &rarr; <strong>"In Safari öffnen"</strong>.<br>
-                    2. <em>Oder:</em> Öffne auf dem iPad die App <strong>"Dateien"</strong> (Files) &rarr; OneDrive &rarr; <code>medstudy_mobile.html</code>.
-                </div>`;
-            }
-        };
-
-        // Initialize SQL.js
+        // SQL.js Initialization
         const sqlPromise = initSqlJs({
             locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
         });
 
-        // IndexedDB Caching for DB ArrayBuffer
-        const IDB_DB_NAME = "MedStudyMobileDB";
-        const IDB_STORE = "files";
-        const IDB_KEY = "medstudy_db";
-
+        // ─── IndexedDB Storage Helpers ──────────────────────────────
         function saveToIndexedDB(arrayBuffer) {
             return new Promise((resolve) => {
-                const req = indexedDB.open(IDB_DB_NAME, 1);
-                req.onupgradeneeded = (e) => {
-                    e.target.result.createObjectStore(IDB_STORE);
-                };
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onupgradeneeded = (e) => e.target.result.createObjectStore(IDB_STORE);
                 req.onsuccess = (e) => {
-                    const idb = e.target.result;
-                    const tx = idb.transaction(IDB_STORE, "readwrite");
+                    const tx = e.target.result.transaction(IDB_STORE, "readwrite");
                     tx.objectStore(IDB_STORE).put(arrayBuffer, IDB_KEY);
                     tx.oncomplete = () => resolve(true);
                 };
@@ -993,13 +1222,10 @@
 
         function loadFromIndexedDB() {
             return new Promise((resolve) => {
-                const req = indexedDB.open(IDB_DB_NAME, 1);
-                req.onupgradeneeded = (e) => {
-                    e.target.result.createObjectStore(IDB_STORE);
-                };
+                const req = indexedDB.open(IDB_NAME, 1);
+                req.onupgradeneeded = (e) => e.target.result.createObjectStore(IDB_STORE);
                 req.onsuccess = (e) => {
-                    const idb = e.target.result;
-                    const tx = idb.transaction(IDB_STORE, "readonly");
+                    const tx = e.target.result.transaction(IDB_STORE, "readonly");
                     const getReq = tx.objectStore(IDB_STORE).get(IDB_KEY);
                     getReq.onsuccess = () => resolve(getReq.result || null);
                     getReq.onerror = () => resolve(null);
@@ -1008,606 +1234,715 @@
             });
         }
 
-        // Auto-load cached DB on page load
+        // ─── Database Query Helpers ─────────────────────────────────
+        function queryDB(sql, params = []) {
+            if (!db) return [];
+            try {
+                const stmt = db.prepare(sql);
+                stmt.bind(params);
+                const results = [];
+                while (stmt.step()) {
+                    results.push(stmt.getAsObject());
+                }
+                stmt.free();
+                return results;
+            } catch (e) {
+                console.error("Query Error:", sql, e);
+                return [];
+            }
+        }
+
+        function execDB(sql, params = []) {
+            if (!db) return false;
+            try {
+                db.run(sql, params);
+                markDirty();
+                return true;
+            } catch (e) {
+                console.error("Exec Error:", sql, e);
+                showToast("Fehler: " + e.message);
+                return false;
+            }
+        }
+
+        function markDirty() {
+            isDirty = true;
+            document.getElementById('dirty-indicator').classList.add('active');
+            document.getElementById('nav-dirty-badge').style.display = 'inline-block';
+            document.getElementById('header-save-btn').disabled = false;
+            // Auto-persist binary to IndexedDB in background
+            try {
+                const data = db.export();
+                saveToIndexedDB(data.buffer);
+            } catch (e) {}
+        }
+
+        function markClean() {
+            isDirty = false;
+            document.getElementById('dirty-indicator').classList.remove('active');
+            document.getElementById('nav-dirty-badge').style.display = 'none';
+        }
+
+        // ─── App Startup ────────────────────────────────────────────
         window.addEventListener('DOMContentLoaded', async () => {
             const cachedBuffer = await loadFromIndexedDB();
             if (cachedBuffer) {
                 try {
                     document.getElementById('loader-spinner').style.display = 'block';
                     document.getElementById('db-pick-label').style.display = 'none';
-                    document.getElementById('loader-msg').innerText = "Lade gespeicherte Datenbank aus dem Cache...";
+                    document.getElementById('loader-msg').innerText = "Lade Datenbank aus lokalem Speicher...";
                     
                     const SQL = await sqlPromise;
                     db = new SQL.Database(new Uint8Array(cachedBuffer));
-                    
-                    document.getElementById('loader').style.opacity = '0';
-                    setTimeout(() => {
-                        document.getElementById('loader').style.display = 'none';
-                        document.getElementById('app-content').style.display = 'block';
-                        document.getElementById('save-db-btn').disabled = false;
-                        loadDashboard();
-                        loadUnits();
-                    }, 300);
-                } catch(e) {
-                    console.error("Cache load error:", e);
+                    initAppViews();
+                } catch (e) {
+                    console.error("Cache load failed:", e);
                     document.getElementById('loader-spinner').style.display = 'none';
                     document.getElementById('db-pick-label').style.display = 'inline-flex';
-                    document.getElementById('loader-msg').innerText = "Wähle deine medStudy.db aus dem OneDrive-Ordner aus.";
+                    document.getElementById('loader-msg').innerText = "Wähle deine medStudy.db Datei.";
                 }
             }
         });
 
-        // Event Listener for Native File Picker (iPadOS / iOS compatible)
         document.getElementById('db-file-input').addEventListener('change', async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            selectedFile = file;
 
             document.getElementById('loader').style.display = 'flex';
             document.getElementById('loader').style.opacity = '1';
             document.getElementById('loader-spinner').style.display = 'block';
             document.getElementById('db-pick-label').style.display = 'none';
-            document.getElementById('loader-msg').innerText = "Initialisiere SQLite-Engine...";
+            document.getElementById('loader-msg').innerText = `Lade Datei (${Math.round(file.size / 1024)} KB)...`;
 
             try {
                 const SQL = await sqlPromise;
-                document.getElementById('loader-msg').innerText = `Lese Datei (${Math.round(file.size / 1024)} KB)...`;
-                
                 const reader = new FileReader();
                 reader.onload = async function() {
                     try {
-                        document.getElementById('loader-msg').innerText = "Lade Tabellen in den Speicher...";
-                        const uints = new Uint8Array(reader.result);
-                        
-                        db = new SQL.Database(uints);
+                        db = new SQL.Database(new Uint8Array(reader.result));
                         await saveToIndexedDB(reader.result);
-                        
-                        document.getElementById('loader').style.opacity = '0';
-                        setTimeout(() => {
-                            document.getElementById('loader').style.display = 'none';
-                            document.getElementById('app-content').style.display = 'block';
-                            document.getElementById('save-db-btn').disabled = false;
-                            loadDashboard();
-                            loadUnits();
-                            showToast("Datenbank erfolgreich geladen!");
-                        }, 300);
+                        initAppViews();
+                        showToast("Datenbank erfolgreich geladen!");
                     } catch (dbErr) {
-                        console.error("SQLite Init Error:", dbErr);
-                        alert("Fehler beim Öffnen der SQLite-Datenbank: " + dbErr.message + "\n\nIst die Datei beschädigt?");
+                        alert("Fehler beim Öffnen der SQLite-Datenbank: " + dbErr.message);
                         document.getElementById('loader-spinner').style.display = 'none';
                         document.getElementById('db-pick-label').style.display = 'inline-flex';
-                        document.getElementById('loader-msg').innerText = "Datenbank-Fehler. Bitte versuche es erneut.";
                     }
-                };
-                reader.onerror = function(rErr) {
-                    alert("Dateilesefehler auf dem Handy.");
-                    document.getElementById('loader-spinner').style.display = 'none';
-                    document.getElementById('db-pick-label').style.display = 'inline-flex';
                 };
                 reader.readAsArrayBuffer(file);
             } catch (err) {
-                console.error("SQL.js Init Error:", err);
-                alert("Fehler beim Laden der SQLite-Engine: " + err.message);
-                document.getElementById('loader-spinner').style.display = 'none';
-                document.getElementById('db-pick-label').style.display = 'inline-flex';
-                document.getElementById('loader-msg').innerText = "Ladefehler. Bitte versuche es erneut.";
+                alert("Fehler: " + err.message);
             }
         });
 
-        document.getElementById('save-db-btn').addEventListener('click', async () => {
-            if (!db) return;
-            try {
-                const binaryArray = db.export();
-                await saveToIndexedDB(binaryArray.buffer);
-
-                const blob = new Blob([binaryArray], { type: "application/octet-stream" });
-                const a = document.createElement("a");
-                a.href = URL.createObjectURL(blob);
-                a.download = selectedFile ? selectedFile.name : "medStudy.db";
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-                showToast("Datenbank exportiert! Ersetze die medStudy.db im OneDrive-Ordner.");
-            } catch (err) {
-                alert("Fehler beim Exportieren: " + err.message);
-            }
-        });
-
-        // Query Helper
-        function queryDB(sql, params = []) {
-            if (!db) return [];
-            try {
-                const stmt = db.prepare(sql);
-                stmt.bind(params);
-                const result = [];
-                while (stmt.step()) {
-                    result.push(stmt.getAsObject());
-                }
-                stmt.free();
-                return result;
-            } catch (err) {
-                console.error("DB Query Error:", err, sql);
-                return [];
-            }
-        }
-
-        // Exec Helper
-        function execDB(sql, params = []) {
-            if (!db) return;
-            try {
-                db.run(sql, params);
-            } catch (err) {
-                console.error("DB Exec Error:", err, sql);
-                alert("Datenbankfehler beim Schreiben: " + err.message);
-            }
-        }
-
-        // Toast Notice
-        function showToast(msg) {
-            const toast = document.getElementById('toast');
-            toast.innerText = msg;
-            toast.classList.add('active');
+        function initAppViews() {
+            document.getElementById('loader').style.opacity = '0';
             setTimeout(() => {
-                toast.classList.remove('active');
-            }, 4000);
+                document.getElementById('loader').style.display = 'none';
+                document.getElementById('header-save-btn').disabled = false;
+                buildBlockFilterPills();
+                renderDashboard();
+                renderUnitsList();
+                renderCardsList();
+                renderSyncView();
+            }, 250);
         }
 
-        // Dashboard loading
-        function loadDashboard() {
-            const counts = queryDB("SELECT COUNT(*) as tot, SUM(CASE WHEN status='completed' THEN 1 ELSE 0 END) as comp, SUM(CASE WHEN status='completed' AND (anki_synced=0 OR anki_synced IS NULL) THEN 1 ELSE 0 END) as unsynced FROM learning_units");
-            if (counts.length > 0) {
-                const tot = counts[0].tot || 0;
-                const comp = counts[0].comp || 0;
-                const unsynced = counts[0].unsynced || 0;
-                
-                document.getElementById('stat-learned').innerText = comp;
-                document.getElementById('stat-unsynced').innerText = unsynced;
-                document.getElementById('progress-count').innerText = `${comp}/${tot} Einheiten`;
-                
-                const percent = tot > 0 ? Math.round((comp / tot) * 100) : 0;
-                document.getElementById('progress-percent').innerText = `${percent}% abgeschlossen`;
-                document.getElementById('progress-fill').style.width = `${percent}%`;
+        // ─── View Navigation ────────────────────────────────────────
+        function switchView(viewName) {
+            currentView = viewName;
+            document.querySelectorAll('.view-section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+
+            const viewEl = document.getElementById(`view-${viewName}`);
+            const navEl = document.getElementById(`nav-${viewName}`);
+            if (viewEl) viewEl.classList.add('active');
+            if (navEl) navEl.classList.add('active');
+
+            if (viewName === 'dashboard') renderDashboard();
+            if (viewName === 'units') renderUnitsList();
+            if (viewName === 'cards') renderCardsList();
+            if (viewName === 'sync') renderSyncView();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        // ─── 1. Dashboard Logic ─────────────────────────────────────
+        function renderDashboard() {
+            if (!db) return;
+
+            const totalRow = queryDB("SELECT COUNT(*) as count FROM learning_units")[0] || { count: 0 };
+            const completedRow = queryDB("SELECT COUNT(*) as count FROM learning_units WHERE status = 'completed'")[0] || { count: 0 };
+            const total = totalRow.count || 0;
+            const completed = completedRow.count || 0;
+            const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
+
+            document.getElementById('dash-progress-pct').innerText = `${pct}% abgeschlossen`;
+            document.getElementById('dash-progress-count').innerText = `${completed} / ${total} Einheiten`;
+            document.getElementById('dash-progress-bar').style.width = `${pct}%`;
+            document.getElementById('stat-completed').innerText = completed;
+
+            // Target Pace (Soll-Stand)
+            const settingsRows = queryDB("SELECT key, value FROM settings");
+            const settings = {};
+            settingsRows.forEach(r => settings[r.key] = r.value);
+
+            const examDateStr = settings.exam_date || "2026-07-01";
+            const studyStartStr = settings.study_start_date || "2026-01-01";
+            const todayStr = new Date().toISOString().split('T')[0];
+
+            const startT = new Date(studyStartStr).getTime();
+            const examT = new Date(examDateStr).getTime();
+            const todayT = new Date(todayStr).getTime();
+
+            let targetUnits = 0;
+            if (examT > startT && total > 0) {
+                const elapsedDays = Math.max(0, (todayT - startT) / (1000 * 60 * 60 * 24));
+                const totalDays = Math.max(1, (examT - startT) / (1000 * 60 * 60 * 24));
+                const paceRatio = Math.min(1.0, elapsedDays / totalDays);
+                targetUnits = Math.round(total * paceRatio);
             }
 
-            // Overdue check
-            const startDateRow = queryDB("SELECT value FROM settings WHERE key='study_start_date'");
-            if (startDateRow.length > 0 && startDateRow[0].value) {
-                const startDateStr = startDateRow[0].value;
-                const start = new Date(startDateStr);
-                const today = new Date();
-                
-                let daysNeeded = 0;
-                let temp = new Date(start);
-                while (temp <= today) {
-                    const day = temp.getDay();
-                    if (day !== 0 && day !== 6) {
-                        daysNeeded++;
+            const sollMarker = document.getElementById('dash-soll-marker');
+            const sollPct = total > 0 ? Math.min(100, Math.round((targetUnits / total) * 100)) : 0;
+            sollMarker.style.left = `${sollPct}%`;
+
+            const diff = completed - targetUnits;
+            const sollLabel = document.getElementById('dash-soll-label');
+            if (diff >= 0) {
+                sollLabel.innerHTML = `🚀 <strong style="color:#34d399">+${diff} im Voraus</strong> (Soll: ${targetUnits} Einheiten)`;
+            } else {
+                sollLabel.innerHTML = `⚠️ <strong style="color:#f87171">${Math.abs(diff)} hinter Soll-Plan</strong> (Soll: ${targetUnits} Einheiten)`;
+            }
+
+            // Exam Countdown
+            const daysLeft = Math.ceil((examT - todayT) / (1000 * 60 * 60 * 24));
+            document.getElementById('exam-countdown-badge').innerText = daysLeft > 0 ? `Noch ${daysLeft} Tage` : "SIP";
+
+            // Total Study Hours
+            const hoursRow = queryDB("SELECT COALESCE(SUM(duration_minutes), 0) as total FROM study_sessions")[0];
+            const hours = Math.round((hoursRow ? hoursRow.total : 0) / 60);
+            document.getElementById('stat-hours').innerText = `${hours}h`;
+
+            // Streak Days
+            const sessionDates = queryDB("SELECT DISTINCT DATE(completed_at) as sdate FROM study_sessions WHERE completed_at IS NOT NULL ORDER BY sdate DESC");
+            let streak = 0;
+            let checkDate = new Date();
+            for (let i = 0; i < sessionDates.length; i++) {
+                const sdStr = sessionDates[i].sdate;
+                const expectedStr = checkDate.toISOString().split('T')[0];
+                if (sdStr === expectedStr) {
+                    streak++;
+                    checkDate.setDate(checkDate.getDate() - 1);
+                } else if (i === 0) {
+                    // Check if yesterday had a session
+                    checkDate.setDate(checkDate.getDate() - 1);
+                    const yestStr = checkDate.toISOString().split('T')[0];
+                    if (sdStr === yestStr) {
+                        streak++;
+                        checkDate.setDate(checkDate.getDate() - 1);
+                    } else {
+                        break;
                     }
-                    temp.setDate(temp.getDate() + 1);
-                }
-
-                const updRow = queryDB("SELECT value FROM settings WHERE key='learning_units_per_day'");
-                const upd = updRow.length > 0 ? parseInt(updRow[0].value) || 2 : 2;
-                const targetCount = daysNeeded * upd;
-
-                const completedCount = queryDB("SELECT COUNT(*) as c FROM learning_units WHERE status='completed'")[0].c;
-                if (completedCount < targetCount) {
-                    const diff = targetCount - completedCount;
-                    document.getElementById('overdue-card').style.display = 'block';
-                    document.getElementById('overdue-text').innerHTML = `Du liegst aktuell <strong>${diff} Lerneinheiten</strong> hinter deinem Lernplan zurück. Hake heute ein paar Blöcke ab, um den Rückstand aufzuholen!`;
                 } else {
-                    document.getElementById('overdue-card').style.display = 'none';
+                    break;
                 }
             }
-        }
+            document.getElementById('stat-streak').innerText = `${streak}🔥`;
 
-        // Units checklist loading
-        function loadUnits() {
-            const list = document.getElementById('units-list');
-            list.innerHTML = "";
+            // Pending Anki Queue
+            const pendingRow = queryDB("SELECT COUNT(*) as count FROM pending_anki_sync")[0] || { count: 0 };
+            document.getElementById('stat-pending-anki').innerText = pendingRow.count;
 
-            const units = queryDB(`
-                SELECT lu.*, b.name as block_name 
-                FROM learning_units lu 
-                JOIN blocks b ON lu.block_id = b.id
+            // Overdue Units Check
+            const overdue = queryDB(`
+                SELECT lu.id, lu.title, b.name as block_name, lu.scheduled_date
+                FROM learning_units lu
+                LEFT JOIN blocks b ON lu.block_id = b.id
+                WHERE lu.status != 'completed' AND lu.scheduled_date IS NOT NULL AND lu.scheduled_date != '' AND lu.scheduled_date < ?
+                ORDER BY lu.scheduled_date ASC
+            `, [todayStr]);
+
+            const overdueCard = document.getElementById('dash-overdue-card');
+            if (overdue.length > 0) {
+                overdueCard.style.display = 'block';
+                document.getElementById('dash-overdue-text').innerHTML = `Du hast <strong>${overdue.length} überfällige Lerneinheit${overdue.length !== 1 ? 'en' : ''}</strong> aus vergangenen Tagen.`;
+            } else {
+                overdueCard.style.display = 'none';
+            }
+
+            // Today's Units
+            const todayUnits = queryDB(`
+                SELECT lu.*, b.name as block_name
+                FROM learning_units lu
+                LEFT JOIN blocks b ON lu.block_id = b.id
+                WHERE lu.scheduled_date = ?
+                ORDER BY lu.sort_order ASC
+            `, [todayStr]);
+
+            const todayList = document.getElementById('dash-today-list');
+            document.getElementById('dash-today-count').innerText = `${todayUnits.length} Einheiten`;
+            todayList.innerHTML = "";
+
+            if (todayUnits.length === 0) {
+                todayList.innerHTML = `<div style="text-align:center; padding:16px 0; color:var(--text-muted); font-size:0.85rem;">🎉 Keine offenen Einheiten für heute geplant!</div>`;
+            } else {
+                todayUnits.forEach(u => todayList.appendChild(createUnitCardElement(u)));
+            }
+
+            // Block Progress Overview
+            const blocks = queryDB(`
+                SELECT b.id, b.name,
+                    COUNT(lu.id) as total_units,
+                    SUM(CASE WHEN lu.status = 'completed' THEN 1 ELSE 0 END) as completed_units
+                FROM blocks b
+                LEFT JOIN learning_units lu ON b.id = lu.block_id
                 WHERE b.is_ignored = 0
-                ORDER BY b.sort_order, lu.id
+                GROUP BY b.id
+                ORDER BY b.sort_order ASC
             `);
 
-            if (units.length === 0) {
-                list.innerHTML = `<p style="color: var(--text-muted); text-align: center; font-size: 0.9rem; padding: 20px;">Keine Lerneinheiten gefunden. Bitte scanne deine Ordner am PC.</p>`;
+            const blocksList = document.getElementById('dash-blocks-list');
+            blocksList.innerHTML = "";
+            blocks.forEach(b => {
+                const bPct = b.total_units > 0 ? Math.round((b.completed_units / b.total_units) * 100) : 0;
+                const div = document.createElement('div');
+                div.style.cssText = "margin-bottom: 12px;";
+                div.innerHTML = `
+                    <div style="display:flex; justify-content:space-between; font-size:0.82rem; margin-bottom:4px;">
+                        <span style="font-weight:600;">${escapeHTML(b.name)}</span>
+                        <span style="color:var(--text-muted);">${b.completed_units}/${b.total_units} (${bPct}%)</span>
+                    </div>
+                    <div class="progress-track" style="height:6px; margin:0;">
+                        <div class="progress-fill" style="width:${bPct}%;"></div>
+                    </div>
+                `;
+                blocksList.appendChild(div);
+            });
+        }
+
+        // ─── 2. Units View & Filters ────────────────────────────────
+        function buildBlockFilterPills() {
+            const blocks = queryDB("SELECT id, name FROM blocks WHERE is_ignored = 0 ORDER BY sort_order ASC");
+            const unitsFilterBar = document.getElementById('units-block-filters');
+            const cardsFilterBar = document.getElementById('cards-block-filters');
+            const quizSelect = document.getElementById('quiz-block-select');
+
+            unitsFilterBar.innerHTML = `<button class="filter-pill active" onclick="setUnitBlockFilter('all')">Alle Blöcke</button>`;
+            cardsFilterBar.innerHTML = `<button class="filter-pill active" onclick="setCardBlockFilter('all')">Alle Blöcke</button>`;
+            quizSelect.innerHTML = `<option value="all">Alle Blöcke (Zufall)</option>`;
+
+            blocks.forEach(b => {
+                const shortName = b.name.split('-')[0].trim();
+
+                const uPill = document.createElement('button');
+                uPill.className = 'filter-pill';
+                uPill.innerText = shortName;
+                uPill.onclick = () => setUnitBlockFilter(b.id);
+                unitsFilterBar.appendChild(uPill);
+
+                const cPill = document.createElement('button');
+                cPill.className = 'filter-pill';
+                cPill.innerText = shortName;
+                cPill.onclick = () => setCardBlockFilter(b.id);
+                cardsFilterBar.appendChild(cPill);
+
+                const opt = document.createElement('option');
+                opt.value = b.id;
+                opt.innerText = b.name;
+                quizSelect.appendChild(opt);
+            });
+        }
+
+        function setUnitBlockFilter(blockId) {
+            currentUnitBlockFilter = blockId;
+            document.querySelectorAll('#units-block-filters .filter-pill').forEach((p, idx) => {
+                p.classList.toggle('active', (blockId === 'all' && idx === 0) || p.innerText.includes(`Block ${blockId}`));
+            });
+            renderUnitsList();
+        }
+
+        function setUnitStatusFilter(status) {
+            currentUnitStatusFilter = status;
+            document.querySelectorAll('[id^="unit-status-"]').forEach(p => p.classList.remove('active'));
+            const el = document.getElementById(`unit-status-${status}`);
+            if (el) el.classList.add('active');
+            renderUnitsList();
+        }
+
+        function renderUnitsList() {
+            if (!db) return;
+            const search = document.getElementById('units-search').value.toLowerCase().trim();
+
+            let sql = `
+                SELECT lu.*, b.name as block_name,
+                    (SELECT COUNT(*) FROM clinical_facts WHERE unit_id = lu.id) as fact_count,
+                    (SELECT COUNT(DISTINCT cpm.card_id) FROM unit_lectures ul JOIN card_page_matches cpm ON ul.lecture_id = cpm.lecture_id WHERE ul.unit_id = lu.id AND ((cpm.confidence_score >= 0.55 AND cpm.is_manual != -1) OR cpm.is_manual = 1)) as card_count,
+                    (SELECT COUNT(*) FROM pending_anki_sync WHERE unit_id = lu.id) as in_anki_queue
+                FROM learning_units lu
+                LEFT JOIN blocks b ON lu.block_id = b.id
+                WHERE b.is_ignored = 0
+            `;
+            const params = [];
+
+            if (currentUnitBlockFilter !== 'all') {
+                sql += " AND lu.block_id = ?";
+                params.push(currentUnitBlockFilter);
+            }
+
+            if (currentUnitStatusFilter === 'open') sql += " AND lu.status = 'not_started'";
+            else if (currentUnitStatusFilter === 'inprogress') sql += " AND lu.status = 'in_progress'";
+            else if (currentUnitStatusFilter === 'completed') sql += " AND lu.status = 'completed'";
+
+            sql += " ORDER BY b.sort_order ASC, lu.sort_order ASC, lu.id ASC";
+
+            const units = queryDB(sql, params);
+            const container = document.getElementById('units-container');
+            container.innerHTML = "";
+
+            const filtered = units.filter(u => {
+                if (!search) return true;
+                return u.title.toLowerCase().includes(search) || (u.block_name && u.block_name.toLowerCase().includes(search));
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--text-muted); font-size:0.9rem;">Keine Lerneinheiten für diese Filter gefunden.</div>`;
                 return;
             }
 
-            let currentBlock = "";
-            let blockDiv = null;
-
-            units.forEach(u => {
-                if (u.block_name !== currentBlock) {
-                    currentBlock = u.block_name;
-                    
-                    const header = document.createElement('div');
-                    header.className = 'block-header';
-                    header.innerText = currentBlock;
-                    list.appendChild(header);
-
-                    blockDiv = document.createElement('div');
-                    blockDiv.id = `block-${u.block_id}`;
-                    list.appendChild(blockDiv);
-                }
-
-                const item = document.createElement('div');
-                item.className = 'unit-item';
-                item.addEventListener('click', () => openUnit(u.id));
-
-                let badgeHtml = "";
-                if (u.status === 'completed') {
-                    if (u.anki_synced === 0 || u.anki_synced === null) {
-                        badgeHtml = `<span class="badge badge-unsynced">Gelernt (Wartet auf PC-Anki)</span>`;
-                    } else {
-                        badgeHtml = `<span class="badge badge-completed">Abgeschlossen</span>`;
-                    }
-                } else {
-                    badgeHtml = `<span class="badge badge-pending">Offen</span>`;
-                }
-
-                item.innerHTML = `
-                    <div class="unit-info">
-                        <div class="unit-title">${escapeHTML(u.title)}</div>
-                        <div class="unit-meta">
-                            <span>⏱️ ${u.estimated_duration_minutes || 45} Min.</span>
-                            <span>🎯 Relevanz: ${u.exam_relevance || 3}/5</span>
-                            ${badgeHtml}
-                        </div>
-                    </div>
-                    <div style="color: var(--text-muted); font-size: 1.2rem;">&rsaquo;</div>
-                `;
-                blockDiv.appendChild(item);
-            });
+            filtered.forEach(u => container.appendChild(createUnitCardElement(u)));
         }
 
-        // Open Unit Detail
-        function openUnit(unitId) {
+        function createUnitCardElement(u) {
+            const div = document.createElement('div');
+            div.className = 'unit-item';
+            div.onclick = () => openUnitModal(u.id);
+
+            let statusBadge = `<span class="badge badge-pending">Offen</span>`;
+            if (u.status === 'completed') statusBadge = `<span class="badge badge-completed">✓ Gelernt</span>`;
+            else if (u.status === 'in_progress') statusBadge = `<span class="badge badge-inprogress">⏳ In Arbeit</span>`;
+
+            let queueBadge = '';
+            if (u.in_anki_queue > 0 || (u.status === 'completed' && u.anki_synced === 0)) {
+                queueBadge = `<span class="badge badge-anki-queue" title="Wartet auf Synchronisierung am PC">📥 Anki Queue</span>`;
+            }
+
+            let overdueBadge = '';
+            const todayStr = new Date().toISOString().split('T')[0];
+            if (u.status !== 'completed' && u.scheduled_date && u.scheduled_date < todayStr) {
+                overdueBadge = `<span class="badge badge-overdue">Überfällig</span>`;
+            }
+
+            const dur = u.actual_avg_duration_minutes ? Math.round(u.actual_avg_duration_minutes) : (u.estimated_duration_minutes || 45);
+
+            div.innerHTML = `
+                <div class="unit-top-row">
+                    <div class="unit-title">${escapeHTML(u.title)}</div>
+                    <div style="display:flex; gap:4px; flex-shrink:0;">
+                        ${overdueBadge}
+                        ${queueBadge}
+                        ${statusBadge}
+                    </div>
+                </div>
+                <div class="unit-meta">
+                    <span>📁 ${escapeHTML(u.block_name ? u.block_name.split('-')[0].trim() : '')}</span>
+                    <span>⏱️ ~${dur} min</span>
+                    <span>🔗 ${u.card_count || 0} Altfragen</span>
+                    <span>💡 ${u.fact_count || 0} Facts</span>
+                    ${u.scheduled_date ? `<span>📅 ${u.scheduled_date}</span>` : ''}
+                </div>
+            `;
+            return div;
+        }
+
+        // ─── Unit Detail Bottom Sheet ───────────────────────────────
+        function openUnitModal(unitId) {
             activeUnitId = unitId;
-            const u = queryDB("SELECT * FROM learning_units WHERE id = ?", [unitId])[0];
+            const u = queryDB("SELECT lu.*, b.name as block_name FROM learning_units lu LEFT JOIN blocks b ON lu.block_id = b.id WHERE lu.id = ?", [unitId])[0];
             if (!u) return;
 
-            document.getElementById('m-title').innerText = u.title;
-            document.getElementById('m-summary').innerText = u.summary || "Keine KI-Zusammenfassung verfügbar. Führe die Analyse am PC aus.";
-            document.getElementById('m-rel-clinical').innerText = `${u.clinical_relevance || 3}/5 (${u.clinical_relevance_note || 'Keine Angabe'})`;
-            document.getElementById('m-rel-exam').innerText = `${u.exam_relevance || 3}/5 (${u.exam_relevance_note || 'Keine Angabe'})`;
+            document.getElementById('m-unit-title').innerText = u.title;
+            document.getElementById('m-unit-rel-clinical').innerText = `${u.clinical_relevance || 3}/5 ★`;
+            document.getElementById('m-unit-rel-exam').innerText = `${u.exam_relevance || 3}/5 ★`;
+            document.getElementById('m-unit-rel-note').innerText = u.exam_relevance_note || u.clinical_relevance_note || "Keine KI-Notiz vorhanden.";
 
-            // Lernziele
-            const objList = document.getElementById('m-objectives');
+            // Learning Objectives
+            const objList = document.getElementById('m-unit-objectives');
             objList.innerHTML = "";
-            if (u.learning_objectives) {
-                try {
-                    const objs = JSON.parse(u.learning_objectives);
-                    if (Array.isArray(objs)) {
-                        objs.forEach(o => {
-                            const li = document.createElement('li');
-                            li.innerText = o;
-                            objList.appendChild(li);
-                        });
-                    }
-                } catch(e) {}
-            }
-            if (objList.children.length === 0) {
-                objList.innerHTML = `<li style="list-style: none; color: var(--text-muted);">Keine Lernziele definiert.</li>`;
+            try {
+                const objs = JSON.parse(u.learning_objectives || "[]");
+                if (objs.length === 0) objList.innerHTML = "<li>Keine expliziten Lernziele hinterlegt.</li>";
+                else objs.forEach(o => objList.innerHTML += `<li>${escapeHTML(o)}</li>`);
+            } catch (e) {
+                objList.innerHTML = "<li>Lernziele geladen.</li>";
             }
 
-            // Clinical Facts mit Vorlesungs- und Buchquellen
-            const facts = queryDB(`
-                SELECT cf.*, l.filename as lecture_filename
-                FROM clinical_facts cf
-                LEFT JOIN lectures l ON cf.lecture_id = l.id
-                WHERE cf.unit_id = ?
-                ORDER BY cf.importance DESC, cf.sort_order
+            // Attached Lectures
+            const lectures = queryDB(`
+                SELECT l.* FROM lectures l
+                JOIN unit_lectures ul ON l.id = ul.lecture_id
+                WHERE ul.unit_id = ?
             `, [unitId]);
-            
-            document.getElementById('m-facts-count').innerText = facts.length;
-            const factsList = document.getElementById('m-facts-list');
+            const lecContainer = document.getElementById('m-unit-lectures');
+            lecContainer.innerHTML = lectures.map(l => `<div>📄 ${escapeHTML(l.filename)} (${l.page_count} Seiten)</div>`).join('');
+
+            // Clinical Facts
+            const facts = queryDB("SELECT * FROM clinical_facts WHERE unit_id = ? ORDER BY importance DESC, sort_order ASC", [unitId]);
+            document.getElementById('m-count-facts').innerText = facts.length;
+            const factsList = document.getElementById('m-unit-facts-list');
             factsList.innerHTML = "";
-            
             if (facts.length === 0) {
-                factsList.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0;">Keine klinischen Facts generiert. Führe den KI-Scan am PC aus.</p>`;
+                factsList.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine klinischen Facts vorhanden.</p>`;
             } else {
                 facts.forEach(f => {
-                    const div = document.createElement('div');
-                    div.className = `fact-card f-${f.fact_type || 'allgemein'}`;
-                    
-                    const typeLabel = {
-                        symptom: "Symptom",
-                        diagnose: "Diagnose",
-                        therapie: "Therapie",
-                        medikament: "Medikament",
-                        notfall: "🚨 Notfall",
-                        allgemein: "Wissen"
-                    }[f.fact_type] || "Wissen";
-
-                    let linksHtml = '';
-                    if (f.pdf_pages && f.lecture_filename) {
-                        const pages = f.pdf_pages.split(',').map(p => p.trim());
-                        const shortName = f.lecture_filename.replace('.pdf', '');
-                        pages.forEach(p => {
-                            linksHtml += `
-                                <span class="source-badge source-badge-pdf">
-                                    📄 ${escapeHTML(shortName)} (S. ${p})
-                                </span>
-                            `;
-                        });
-                    }
-
-                    if (f.book_references) {
-                        try {
-                            const refs = JSON.parse(f.book_references);
-                            if (Array.isArray(refs)) {
-                                refs.forEach(ref => {
-                                    linksHtml += `
-                                        <span class="source-badge source-badge-book">
-                                            📖 ${escapeHTML(ref.book_title.substring(0, 22))}... (S. ${ref.page_start})
-                                        </span>
-                                    `;
-                                });
-                            }
-                        } catch(e) {}
-                    }
-
-                    div.innerHTML = `
-                        <div class="fact-badge" style="color: var(--text-muted);">${typeLabel} (Imp: ${f.importance}/5)</div>
-                        <div>${escapeHTML(f.fact_text)}</div>
-                        ${linksHtml ? `<div style="display: flex; flex-wrap: wrap; margin-top: 6px;">${linksHtml}</div>` : ''}
-                    `;
-                    factsList.appendChild(div);
-                });
-            }
-
-            // Anki Cards mit echten Vorlesungs-Quellen!
-            const thresholdRow = queryDB("SELECT value FROM settings WHERE key='match_threshold_secondary'");
-            const threshold = thresholdRow.length > 0 ? parseFloat(thresholdRow[0].value) || 0.40 : 0.40;
-            const primaryRow = queryDB("SELECT value FROM settings WHERE key='match_threshold_primary'");
-            const thresholdPrimary = primaryRow.length > 0 ? parseFloat(primaryRow[0].value) || 0.55 : 0.55;
-
-            const cards = queryDB(`
-                SELECT DISTINCT
-                    ac.*,
-                    MAX(cpm.confidence_score) as max_confidence,
-                    MAX(cpm.is_manual) as is_manual
-                FROM anki_cards ac
-                JOIN card_page_matches cpm ON ac.id = cpm.card_id
-                JOIN unit_lectures ul ON cpm.lecture_id = ul.lecture_id
-                WHERE ul.unit_id = ?
-                  AND (cpm.confidence_score >= ? OR cpm.is_manual = 1)
-                GROUP BY ac.id
-                ORDER BY max_confidence DESC
-            `, [unitId, threshold]);
-
-            const coupled = [];
-            const candidates = [];
-            cards.forEach(c => {
-                const isCoupled = (c.is_manual === 1) || (c.is_manual !== -1 && c.max_confidence >= thresholdPrimary);
-                if (isCoupled) {
-                    coupled.push(c);
-                } else {
-                    candidates.push(c);
-                }
-            });
-
-            document.getElementById('m-cards-count').innerText = coupled.length;
-            const cardsList = document.getElementById('m-cards-list');
-            cardsList.innerHTML = "";
-
-            const renderMobileCard = (c) => {
-                const acc = document.createElement('div');
-                acc.className = 'card-accordion';
-                
-                let blockTagHtml = '';
-                if (c.tags) {
-                    try {
-                        const tagsArray = JSON.parse(c.tags);
-                        if (Array.isArray(tagsArray)) {
-                            const blockTag = tagsArray.find(t => t.toLowerCase().startsWith('block'));
-                            if (blockTag) {
-                                blockTagHtml = `<span style="padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 700; background: rgba(168, 85, 247, 0.15); color: #c084fc; border: 1px solid rgba(168, 85, 247, 0.3); margin-right: 6px; white-space: nowrap;">${escapeHTML(blockTag)}</span>`;
-                            }
-                        }
-                    } catch(e) {}
-                }
-
-                // Vorlesungs-Indikator (über die gesamte DB hinweg)
-                const allMatches = queryDB(`
-                    SELECT DISTINCT cpm.lecture_id
-                    FROM card_page_matches cpm
-                    WHERE cpm.card_id = ?
-                      AND ((cpm.confidence_score >= ? AND (cpm.is_manual IS NULL OR cpm.is_manual != -1)) OR cpm.is_manual = 1)
-                `, [c.id, thresholdPrimary]);
-
-                const totalMatchedLectures = allMatches.length || 1;
-                let matchBadgeHtml = '';
-                if (totalMatchedLectures > 1) {
-                    matchBadgeHtml = `<span class="source-badge" style="background:rgba(168,85,247,0.2);color:#c084fc;border:1px solid rgba(168,85,247,0.4);font-weight:700;cursor:pointer" onclick="event.stopPropagation(); openMobileCardMatchesModal(${c.id})">🔗 In ${totalMatchedLectures} Vorlesungen</span>`;
-                } else {
-                    matchBadgeHtml = `<span class="source-badge" style="opacity:0.75;cursor:pointer" onclick="event.stopPropagation(); openMobileCardMatchesModal(${c.id})">🔗 1 Vorlesung</span>`;
-                }
-
-                // Vorlesungs-Quellen für diese Altfrage in der aktuellen Lerneinheit abfragen
-                const matches = queryDB(`
-                    SELECT l.id as lecture_id, l.filename as lecture_name, cpm.page_number, cpm.confidence_score
-                    FROM card_page_matches cpm
-                    JOIN lectures l ON cpm.lecture_id = l.id
-                    WHERE cpm.card_id = ?
-                    ORDER BY cpm.confidence_score DESC
-                `, [c.id]);
-
-                let sourcesHtml = '';
-                matches.forEach(m => {
-                    const shortLec = m.lecture_name.replace('.pdf', '');
-                    const scorePct = Math.round(m.confidence_score * 100);
-                    const safeName = escapeHTML(shortLec).replace(/'/g, "\\'");
-                    sourcesHtml += `
-                        <span class="source-badge source-badge-pdf" style="cursor:pointer" onclick="openSlideTextModal(${m.lecture_id}, ${m.page_number}, '${safeName}')">
-                            📄 ${escapeHTML(shortLec)} (Folie ${m.page_number} · ${scorePct}%)
-                        </span>
-                    `;
-                });
-
-                // Trend & Year badges
-                let trendBadge = '';
-                if (c.frequency_trend === 'rising') trendBadge = '<span style="color:#10b981;font-size:0.75rem;margin-left:4px">📈 Steigend</span>';
-                else if (c.frequency_trend === 'declining') trendBadge = '<span style="color:#ef4444;font-size:0.75rem;margin-left:4px">📉 Fallend</span>';
-                else if (c.frequency_trend === 'stable') trendBadge = '<span style="color:#3b82f6;font-size:0.75rem;margin-left:4px">➡️ Stabil</span>';
-                
-                const header = document.createElement('div');
-                header.className = 'card-acc-header';
-                header.innerHTML = `
-                    <div style="flex: 1; padding-right: 10px; display: flex; align-items: center; flex-wrap: wrap; gap: 4px;">
-                        ${blockTagHtml}
-                        ${matchBadgeHtml}
-                        <span>${escapeHTML(c.question.replace(/<[^>]*>/g, '').substring(0, 75))}...</span>
-                    </div>
-                    <div style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap;">Score: ${Math.round(c.max_confidence * 100)}% &blacktriangledown;</div>
-                `;
-
-                // Linebreak Formatter & Pre-wrap Container
-                const formattedQ = formatCardContent(c.question);
-                const formattedA = formatCardContent(c.answer);
-
-                const body = document.createElement('div');
-                body.className = 'card-acc-body';
-                body.innerHTML = `
-                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-                        <div style="font-size:0.75rem;color:var(--text-muted)">Erschienen: ${c.appearance_count || 1}x ${trendBadge}</div>
-                        ${matchBadgeHtml}
-                    </div>
-                    <div style="font-weight: 600; margin-bottom: 6px; color: var(--primary);">Frage:</div>
-                    <div style="margin-bottom: 12px; background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; white-space: pre-wrap; word-break: break-word; line-height: 1.5;">${formattedQ}</div>
-                    <div style="font-weight: 600; margin-bottom: 6px; color: var(--accent-teal);">Antwort:</div>
-                    <div style="background: rgba(0,0,0,0.25); padding: 10px; border-radius: 8px; margin-bottom: 12px; white-space: pre-wrap; word-break: break-word; line-height: 1.5;">${formattedA}</div>
-                    ${sourcesHtml ? `<div style="font-size:0.75rem;font-weight:600;color:var(--text-muted);margin-bottom:4px">Quellen in dieser Lerneinheit (antippen für Folientext):</div><div style="display:flex;flex-wrap:wrap;">${sourcesHtml}</div>` : ''}
-                `;
-
-                header.addEventListener('click', () => {
-                    const isVisible = body.style.display === 'block';
-                    body.style.display = isVisible ? 'none' : 'block';
-                });
-
-                acc.appendChild(header);
-                acc.appendChild(body);
-                return acc;
-            };
-
-            if (coupled.length === 0 && candidates.length === 0) {
-                cardsList.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0;">Keine Altfragen (Anki) zu dieser Einheit gematcht.</p>`;
-            } else {
-                if (coupled.length > 0) {
-                    coupled.forEach(c => cardsList.appendChild(renderMobileCard(c)));
-                } else {
-                    const emptyCoupled = document.createElement('p');
-                    emptyCoupled.style.cssText = "color: var(--text-muted); font-size: 0.8rem; text-align: center; padding: 10px 0; border: 1px dashed rgba(255,255,255,0.1); border-radius: 6px; margin-bottom: 10px;";
-                    emptyCoupled.innerText = "Keine gekoppelten Altfragen in dieser Einheit.";
-                    cardsList.appendChild(emptyCoupled);
-                }
-
-                if (candidates.length > 0) {
-                    const divider = document.createElement('div');
-                    divider.style.cssText = "margin: 25px 0 15px 0; text-align: center; border-top: 1px dashed rgba(255,255,255,0.15); position: relative;";
-                    divider.innerHTML = `<span style="position: relative; top: -10px; background: #13192b; padding: 0 10px; font-size: 0.75rem; color: #f59e0b; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em;">Mögliche Kandidaten (unter ${Math.round(thresholdPrimary * 100)}%)</span>`;
-                    cardsList.appendChild(divider);
-
-                    candidates.forEach(c => cardsList.appendChild(renderMobileCard(c)));
-                }
-            }
-
-            // Quiz Questions
-            const quizList = document.getElementById('m-quiz-list');
-            quizList.innerHTML = "";
-            const quizzes = queryDB("SELECT * FROM generated_questions WHERE unit_id = ?", [unitId]);
-            document.getElementById('m-quiz-count').innerText = quizzes.length;
-
-            if (quizzes.length === 0) {
-                quizList.innerHTML = `<p style="color: var(--text-muted); font-size: 0.85rem; padding: 10px 0;">Keine KI-Quizfragen vorhanden.</p>`;
-            } else {
-                quizzes.forEach((q, idx) => {
-                    const qDiv = document.createElement('div');
-                    qDiv.className = 'quiz-item';
-
-                    const options = [
-                        { key: 'a', text: q.option_a },
-                        { key: 'b', text: q.option_b },
-                        { key: 'c', text: q.option_c },
-                        { key: 'd', text: q.option_d },
-                    ].filter(o => o.text);
-
-                    let optionsHtml = '';
-                    options.forEach(o => {
-                        optionsHtml += `<div class="quiz-option" data-key="${o.key}" onclick="checkQuizAnswer(this, '${q.correct_option}', '${q.id}')"><strong>${o.key.toUpperCase()}:</strong> ${escapeHTML(o.text)}</div>`;
-                    });
-
-                    qDiv.innerHTML = `
-                        <div style="font-weight:600;font-size:0.9rem;margin-bottom:8px">Frage ${idx + 1}: ${escapeHTML(q.question)}</div>
-                        ${optionsHtml}
-                        <div class="quiz-explanation" id="quiz-exp-${q.id}">
-                            <strong>💡 Erklärung:</strong> ${escapeHTML(q.explanation || 'Keine Erklärung verfügbar.')}
+                    const card = document.createElement('div');
+                    card.className = `fact-card f-${f.fact_type || 'allgemein'}`;
+                    card.innerHTML = `
+                        <div style="font-size:0.7rem; font-weight:700; text-transform:uppercase; color:var(--text-muted); margin-bottom:4px;">
+                            ${escapeHTML(f.fact_type || 'Wissen')} · Wichtigkeit: ${f.importance}/5
                         </div>
+                        <div>${escapeHTML(f.fact_text)}</div>
                     `;
-                    quizList.appendChild(qDiv);
+                    factsList.appendChild(card);
                 });
             }
 
-            // Actions (Complete / Reset)
-            const actions = document.getElementById('m-actions');
-            actions.innerHTML = "";
-            
-            if (u.status === 'completed') {
-                const btn = document.createElement('button');
-                btn.className = 'action-button btn-reset';
-                btn.innerText = "Als offen markieren";
-                btn.addEventListener('click', () => resetUnit(unitId));
-                actions.appendChild(btn);
-            } else {
-                const btn = document.createElement('button');
-                btn.className = 'action-button btn-complete';
-                btn.innerHTML = `🏁 Als gelernt markieren`;
-                btn.addEventListener('click', () => openTimeModal(unitId));
-                actions.appendChild(btn);
-            }
+            // Slide Texts (searchable OCR contents)
+            renderUnitSlideTexts(unitId);
 
-            // Open Modal
-            switchTab('tab-summary');
-            document.getElementById('detail-modal').classList.add('active');
+            // Altfragen
+            renderUnitAltfragen(unitId);
+
+            // Notes
+            document.getElementById('m-unit-notes-text').value = u.notes || "";
+
+            // Quiz
+            renderUnitQuiz(unitId);
+
+            // Footer Actions
+            renderUnitFooterActions(u);
+
+            switchModalTab('tab-unit-info');
+            document.getElementById('unit-modal').classList.add('active');
         }
 
-        function checkQuizAnswer(el, correctKey, quizId) {
-            const parent = el.parentElement;
-            const options = parent.querySelectorAll('.quiz-option');
-            options.forEach(opt => {
-                const key = opt.getAttribute('data-key');
-                if (key === correctKey) {
-                    opt.classList.add('correct');
-                } else if (opt === el) {
-                    opt.classList.add('wrong');
-                }
-            });
-            const exp = document.getElementById(`quiz-exp-${quizId}`);
-            if (exp) exp.style.display = 'block';
-        }
-
-        function closeModal() {
-            document.getElementById('detail-modal').classList.remove('active');
+        function closeUnitModal() {
+            document.getElementById('unit-modal').classList.remove('active');
             activeUnitId = null;
         }
 
-        function switchTab(tabId) {
-            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('active'));
+        function switchModalTab(tabId) {
+            document.querySelectorAll('.modal-tab-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll('.modal-tab-pane').forEach(p => p.classList.remove('active'));
 
-            const btn = Array.from(document.querySelectorAll('.tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
+            const btn = Array.from(document.querySelectorAll('.modal-tab-btn')).find(b => b.getAttribute('onclick').includes(tabId));
             if (btn) btn.classList.add('active');
-            
-            document.getElementById(tabId).classList.add('active');
+            const pane = document.getElementById(tabId);
+            if (pane) pane.classList.add('active');
         }
 
-        // Custom Time Selection Modal
+        function renderUnitSlideTexts(unitId) {
+            const pages = queryDB(`
+                SELECT lp.page_number, lp.text_content, l.filename
+                FROM lecture_pages lp
+                JOIN unit_lectures ul ON lp.lecture_id = ul.lecture_id
+                JOIN lectures l ON lp.lecture_id = l.id
+                WHERE ul.unit_id = ?
+                ORDER BY l.filename, lp.page_number ASC
+            `, [unitId]);
+
+            const container = document.getElementById('m-unit-slides-list');
+            container.innerHTML = "";
+
+            if (pages.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine Folientexte in der Datenbank gespeichert.</p>`;
+                return;
+            }
+
+            pages.forEach(p => {
+                if (!p.text_content || p.text_content.trim().length === 0) return;
+                const div = document.createElement('div');
+                div.className = 'slide-text-item';
+                div.innerHTML = `
+                    <div class="slide-text-header">
+                        <span>📄 ${escapeHTML(p.filename.replace('.pdf',''))}</span>
+                        <span>Folie ${p.page_number}</span>
+                    </div>
+                    <div class="slide-text-content">${escapeHTML(p.text_content)}</div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function filterSlideTexts() {
+            const q = document.getElementById('slide-search').value.toLowerCase();
+            document.querySelectorAll('.slide-text-item').forEach(item => {
+                const text = item.innerText.toLowerCase();
+                item.style.display = text.includes(q) ? 'block' : 'none';
+            });
+        }
+
+        function renderUnitAltfragen(unitId) {
+            const cards = queryDB(`
+                SELECT DISTINCT ac.*, cpm.confidence_score, cpm.is_manual, cpm.page_number, cpm.lecture_id, l.filename as lecture_filename
+                FROM anki_cards ac
+                JOIN card_page_matches cpm ON ac.id = cpm.card_id
+                JOIN unit_lectures ul ON cpm.lecture_id = ul.lecture_id
+                JOIN lectures l ON cpm.lecture_id = l.id
+                WHERE ul.unit_id = ?
+                ORDER BY cpm.confidence_score DESC
+            `, [unitId]);
+
+            document.getElementById('m-count-cards').innerText = cards.length;
+            const container = document.getElementById('m-unit-cards-list');
+            container.innerHTML = "";
+
+            if (cards.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine Altfragen zu dieser Einheit gematcht.</p>`;
+                return;
+            }
+
+            cards.forEach(c => {
+                const isCoupled = (c.is_manual === 1) || (c.is_manual !== -1 && c.confidence_score >= 0.55);
+                const acc = document.createElement('div');
+                acc.className = 'card-accordion';
+                
+                acc.innerHTML = `
+                    <div class="card-acc-header" onclick="toggleAccBody(this)">
+                        <div style="flex:1; padding-right:6px;">
+                            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">#${c.id}</span>
+                            <div style="font-size:0.88rem; font-weight:500; margin-top:2px;">${escapeHTML(c.question.replace(/<[^>]*>/g,'').substring(0, 80))}...</div>
+                        </div>
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                            <span class="badge ${isCoupled ? 'badge-completed' : 'badge-pending'}">${Math.round(c.confidence_score * 100)}%</span>
+                        </div>
+                    </div>
+                    <div class="card-acc-body">
+                        <div style="font-weight:600; color:var(--primary); margin-bottom:4px;">Frage:</div>
+                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:10px; white-space:pre-wrap;">${escapeHTML(c.question.replace(/<[^>]*>/g,''))}</div>
+                        <div style="font-weight:600; color:var(--accent-teal); margin-bottom:4px;">Antwort:</div>
+                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:12px; white-space:pre-wrap;">${escapeHTML(c.answer.replace(/<[^>]*>/g,''))}</div>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px;">
+                            <span class="source-badge">📄 Folie ${c.page_number}</span>
+                            <button class="btn-couple ${isCoupled ? 'btn-couple-off' : 'btn-couple-on'}" onclick="toggleCardCoupling(${c.id}, ${c.lecture_id}, ${isCoupled ? -1 : 1})">
+                                ${isCoupled ? '❌ Entkoppeln' : '🔗 Koppeln'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(acc);
+            });
+        }
+
+        function toggleAccBody(hdr) {
+            const body = hdr.nextElementSibling;
+            body.style.display = body.style.display === 'block' ? 'none' : 'block';
+        }
+
+        function toggleCardCoupling(cardId, lectureId, newManualState) {
+            execDB(`
+                UPDATE card_page_matches
+                SET is_manual = ?
+                WHERE card_id = ? AND lecture_id = ?
+            `, [newManualState, cardId, lectureId]);
+
+            // Feedback log
+            execDB(`
+                INSERT INTO matching_feedback_log (card_id, lecture_id, action)
+                VALUES (?, ?, ?)
+            `, [cardId, lectureId, newManualState === 1 ? 'couple' : 'uncouple']);
+
+            showToast(newManualState === 1 ? "Altfrage manuell gekoppelt!" : "Altfrage entkoppelt!");
+            if (activeUnitId) renderUnitAltfragen(activeUnitId);
+            renderCardsList();
+        }
+
+        function saveCurrentUnitNotes() {
+            if (!activeUnitId) return;
+            const text = document.getElementById('m-unit-notes-text').value;
+            execDB("UPDATE learning_units SET notes = ? WHERE id = ?", [text, activeUnitId]);
+        }
+
+        function renderUnitQuiz(unitId) {
+            const quizzes = queryDB("SELECT * FROM generated_questions WHERE unit_id = ?", [unitId]);
+            const container = document.getElementById('m-unit-quiz-list');
+            container.innerHTML = "";
+
+            if (quizzes.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine KI-Quizfragen zu dieser Einheit.</p>`;
+                return;
+            }
+
+            quizzes.forEach((q, idx) => {
+                const div = document.createElement('div');
+                div.className = 'card';
+                div.style.padding = '12px';
+
+                const opts = [
+                    { k: 'a', t: q.option_a },
+                    { k: 'b', t: q.option_b },
+                    { k: 'c', t: q.option_c },
+                    { k: 'd', t: q.option_d },
+                ].filter(o => o.t);
+
+                let optsHtml = opts.map(o => `
+                    <div class="filter-pill" style="display:block; width:100%; text-align:left; margin-top:6px; border-radius:8px;" onclick="checkAnswer(this, '${o.k}', '${q.correct_option}', '${q.id}')">
+                        <strong>${o.k.toUpperCase()}:</strong> ${escapeHTML(o.t)}
+                    </div>
+                `).join('');
+
+                div.innerHTML = `
+                    <div style="font-weight:600; font-size:0.9rem; margin-bottom:8px;">${idx + 1}. ${escapeHTML(q.question)}</div>
+                    ${optsHtml}
+                    <div id="quiz-explain-${q.id}" style="display:none; margin-top:10px; padding:10px; background:rgba(59,130,246,0.1); border-radius:8px; font-size:0.82rem; color:#93c5fd;">
+                        <strong>💡 Erklärung:</strong> ${escapeHTML(q.explanation || 'Keine Erklärung.')}
+                    </div>
+                `;
+                container.appendChild(div);
+            });
+        }
+
+        function checkAnswer(btn, chosenKey, correctKey, quizId) {
+            const parent = btn.parentElement;
+            parent.querySelectorAll('.filter-pill').forEach(p => p.style.pointerEvents = 'none');
+
+            if (chosenKey === correctKey) {
+                btn.style.background = 'rgba(16, 185, 129, 0.3)';
+                btn.style.borderColor = '#10b981';
+            } else {
+                btn.style.background = 'rgba(239, 68, 68, 0.3)';
+                btn.style.borderColor = '#ef4444';
+            }
+            const exp = document.getElementById(`quiz-explain-${quizId}`);
+            if (exp) exp.style.display = 'block';
+        }
+
+        function renderUnitFooterActions(u) {
+            const footer = document.getElementById('m-unit-footer-actions');
+            footer.innerHTML = "";
+
+            if (u.status === 'completed') {
+                footer.innerHTML = `
+                    <button class="btn-action-secondary" style="flex:1;" onclick="resetUnitProgress(${u.id})">
+                        ↩️ Zurücksetzen
+                    </button>
+                    <button class="btn-action-secondary" style="color:var(--accent-amber);" onclick="enqueueAnkiSync(${u.id})">
+                        📥 In Anki-Queue
+                    </button>
+                `;
+            } else {
+                footer.innerHTML = `
+                    <button class="btn-action-primary" onclick="openTimeModal(${u.id})">
+                        🏁 Als gelernt markieren
+                    </button>
+                    <button class="btn-action-secondary" onclick="enqueueAnkiSync(${u.id})">
+                        📥 Anki Queue
+                    </button>
+                `;
+            }
+        }
+
+        // ─── Time Modal & Unit Completion ───────────────────────────
         function openTimeModal(unitId) {
             pendingCompletionUnitId = unitId;
             document.getElementById('input-completion-time').value = "45";
@@ -1619,55 +1954,435 @@
             pendingCompletionUnitId = null;
         }
 
-        function setCompletionMinutes(mins) {
-            document.getElementById('input-completion-time').value = mins;
+        function setCompletionMinutes(m) {
+            document.getElementById('input-completion-time').value = m;
         }
 
         function confirmCompleteUnit() {
             if (!pendingCompletionUnitId) return;
-            const inputVal = parseInt(document.getElementById('input-completion-time').value);
-            const mins = (inputVal && inputVal > 0) ? inputVal : 45;
+            const mins = parseInt(document.getElementById('input-completion-time').value) || 45;
+            const autoQueue = document.getElementById('check-anki-queue-auto').checked;
             const unitId = pendingCompletionUnitId;
 
             closeTimeModal();
 
+            // Insert Study Session
             execDB(`
                 INSERT INTO study_sessions (unit_id, completed_at, duration_minutes)
                 VALUES (?, datetime('now'), ?)
             `, [unitId, mins]);
 
+            // Update Unit Status
             execDB(`
                 UPDATE learning_units
                 SET status = 'completed', completed_at = datetime('now'), anki_synced = 0
                 WHERE id = ?
             `, [unitId]);
 
-            const avgRow = queryDB("SELECT AVG(duration_minutes) as avg FROM study_sessions WHERE unit_id = ?", [unitId])[0];
-            if (avgRow && avgRow.avg) {
-                execDB("UPDATE learning_units SET actual_avg_duration_minutes = ? WHERE id = ?", [avgRow.avg, unitId]);
+            // Enqueue in pending_anki_sync
+            if (autoQueue) {
+                execDB(`
+                    INSERT INTO pending_anki_sync (unit_id, add_tag, update_links, unsuspend, open_browser, tag)
+                    VALUES (?, 1, 1, 0, 0, 'MedStudy::Behandelt')
+                `, [unitId]);
             }
 
-            closeModal();
-            loadDashboard();
-            loadUnits();
-            showToast(`Einheit abgeschlossen (${mins} Min.)! Tippe oben auf '💾 Speichern'.`);
+            closeUnitModal();
+            renderDashboard();
+            renderUnitsList();
+            renderSyncView();
+            showToast(`🎉 Einheit abgeschlossen (${mins} min)!`);
         }
 
-        function resetUnit(unitId) {
-            if (!confirm("Möchtest du den Fortschritt dieser Einheit wirklich zurücksetzen?")) return;
+        function enqueueAnkiSync(unitId) {
+            execDB(`
+                INSERT INTO pending_anki_sync (unit_id, add_tag, update_links, unsuspend, open_browser, tag)
+                VALUES (?, 1, 1, 0, 0, 'MedStudy::Behandelt')
+                ON CONFLICT DO NOTHING
+            `, [unitId]);
+            showToast("📥 In Anki-Warteschlange eingereiht!");
+            renderDashboard();
+            renderUnitsList();
+            renderSyncView();
+            if (activeUnitId) {
+                const u = queryDB("SELECT * FROM learning_units WHERE id = ?", [activeUnitId])[0];
+                if (u) renderUnitFooterActions(u);
+            }
+        }
 
+        function resetUnitProgress(unitId) {
+            if (!confirm("Lernfortschritt dieser Einheit wirklich zurücksetzen?")) return;
             execDB("DELETE FROM study_sessions WHERE unit_id = ?", [unitId]);
+            execDB("DELETE FROM pending_anki_sync WHERE unit_id = ?", [unitId]);
             execDB("UPDATE learning_units SET status = 'not_started', completed_at = NULL, anki_synced = 0 WHERE id = ?", [unitId]);
+            closeUnitModal();
+            renderDashboard();
+            renderUnitsList();
+            renderSyncView();
+            showToast("Lerneinheit zurückgesetzt.");
+        }
 
-            closeModal();
-            loadDashboard();
-            loadUnits();
-            showToast("Lerneinheit zurückgesetzt!");
+        // ─── 3. Altfragen Explorer View ─────────────────────────────
+        function setCardBlockFilter(blockId) {
+            currentCardBlockFilter = blockId;
+            document.querySelectorAll('#cards-block-filters .filter-pill').forEach((p, idx) => {
+                p.classList.toggle('active', (blockId === 'all' && idx === 0) || p.innerText.includes(`Block ${blockId}`));
+            });
+            renderCardsList();
+        }
+
+        function setCardCoupleFilter(coupleState) {
+            currentCardCoupleFilter = coupleState;
+            document.querySelectorAll('[id^="card-couple-"]').forEach(p => p.classList.remove('active'));
+            const el = document.getElementById(`card-couple-${coupleState}`);
+            if (el) el.classList.add('active');
+            renderCardsList();
+        }
+
+        function renderCardsList() {
+            if (!db) return;
+            const search = document.getElementById('cards-search').value.toLowerCase().trim();
+
+            let sql = `
+                SELECT DISTINCT ac.id, ac.question, ac.answer, ac.appearance_count, ac.frequency_trend,
+                    cpm.confidence_score, cpm.is_manual, cpm.lecture_id, cpm.page_number, l.block_id, l.filename as lecture_name, b.name as block_name
+                FROM anki_cards ac
+                JOIN card_page_matches cpm ON ac.id = cpm.card_id
+                JOIN lectures l ON cpm.lecture_id = l.id
+                LEFT JOIN blocks b ON l.block_id = b.id
+                WHERE 1=1
+            `;
+            const params = [];
+
+            if (currentCardBlockFilter !== 'all') {
+                sql += " AND l.block_id = ?";
+                params.push(currentCardBlockFilter);
+            }
+
+            if (currentCardCoupleFilter === 'linked') {
+                sql += " AND ((cpm.confidence_score >= 0.55 AND (cpm.is_manual IS NULL OR cpm.is_manual != -1)) OR cpm.is_manual = 1)";
+            } else if (currentCardCoupleFilter === 'candidate') {
+                sql += " AND cpm.confidence_score < 0.55 AND cpm.is_manual = 0";
+            } else if (currentCardCoupleFilter === 'manual') {
+                sql += " AND (cpm.is_manual = 1 OR cpm.is_manual = -1)";
+            }
+
+            sql += " ORDER BY cpm.confidence_score DESC LIMIT 60";
+
+            const cards = queryDB(sql, params);
+            const container = document.getElementById('cards-container');
+            const infoEl = document.getElementById('cards-count-info');
+            container.innerHTML = "";
+
+            const filtered = cards.filter(c => {
+                if (!search) return true;
+                return c.question.toLowerCase().includes(search) || c.answer.toLowerCase().includes(search);
+            });
+
+            infoEl.innerText = `${filtered.length} Altfragen angezeigt`;
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:30px 0; color:var(--text-muted); font-size:0.9rem;">Keine Altfragen gefunden.</div>`;
+                return;
+            }
+
+            filtered.forEach(c => {
+                const isCoupled = (c.is_manual === 1) || (c.is_manual !== -1 && c.confidence_score >= 0.55);
+                const acc = document.createElement('div');
+                acc.className = 'card-accordion';
+                
+                acc.innerHTML = `
+                    <div class="card-acc-header" onclick="toggleAccBody(this)">
+                        <div style="flex:1; padding-right:6px;">
+                            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">#${c.id} · ${escapeHTML(c.block_name ? c.block_name.split('-')[0].trim() : '')}</span>
+                            <div style="font-size:0.88rem; font-weight:500; margin-top:2px;">${escapeHTML(c.question.replace(/<[^>]*>/g,'').substring(0, 85))}...</div>
+                        </div>
+                        <span class="badge ${isCoupled ? 'badge-completed' : 'badge-pending'}">${Math.round(c.confidence_score * 100)}%</span>
+                    </div>
+                    <div class="card-acc-body">
+                        <div style="font-weight:600; color:var(--primary); margin-bottom:4px;">Frage:</div>
+                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:10px; white-space:pre-wrap;">${escapeHTML(c.question.replace(/<[^>]*>/g,''))}</div>
+                        <div style="font-weight:600; color:var(--accent-teal); margin-bottom:4px;">Antwort:</div>
+                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:12px; white-space:pre-wrap;">${escapeHTML(c.answer.replace(/<[^>]*>/g,''))}</div>
+                        
+                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px;">
+                            <span class="source-badge">📄 ${escapeHTML(c.lecture_name.replace('.pdf',''))} (S. ${c.page_number})</span>
+                            <button class="btn-couple ${isCoupled ? 'btn-couple-off' : 'btn-couple-on'}" onclick="toggleCardCoupling(${c.id}, ${c.lecture_id}, ${isCoupled ? -1 : 1})">
+                                ${isCoupled ? '❌ Entkoppeln' : '🔗 Koppeln'}
+                            </button>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(acc);
+            });
+        }
+
+        // ─── 4. Quiz Mode Logic ─────────────────────────────────────
+        function startQuiz() {
+            const blockId = document.getElementById('quiz-block-select').value;
+            let sql = "SELECT * FROM generated_questions";
+            const params = [];
+
+            if (blockId !== 'all') {
+                sql += " WHERE unit_id IN (SELECT id FROM learning_units WHERE block_id = ?)";
+                params.push(blockId);
+            }
+            sql += " ORDER BY RANDOM() LIMIT 10";
+
+            const questions = queryDB(sql, params);
+            const area = document.getElementById('quiz-active-area');
+            area.style.display = 'block';
+            area.innerHTML = "";
+
+            if (questions.length === 0) {
+                area.innerHTML = `<div class="card" style="text-align:center; color:var(--text-muted);">Keine KI-Fragen für diesen Block gefunden.</div>`;
+                return;
+            }
+
+            questions.forEach((q, idx) => {
+                const div = document.createElement('div');
+                div.className = 'card';
+
+                const opts = [
+                    { k: 'a', t: q.option_a },
+                    { k: 'b', t: q.option_b },
+                    { k: 'c', t: q.option_c },
+                    { k: 'd', t: q.option_d },
+                ].filter(o => o.t);
+
+                let optsHtml = opts.map(o => `
+                    <div class="filter-pill" style="display:block; width:100%; text-align:left; margin-top:8px; border-radius:8px; padding:10px;" onclick="checkAnswer(this, '${o.k}', '${q.correct_option}', '${q.id}')">
+                        <strong>${o.k.toUpperCase()}:</strong> ${escapeHTML(o.t)}
+                    </div>
+                `).join('');
+
+                div.innerHTML = `
+                    <div style="font-weight:700; font-size:0.95rem; margin-bottom:10px;">Frage ${idx + 1}: ${escapeHTML(q.question)}</div>
+                    ${optsHtml}
+                    <div id="quiz-explain-${q.id}" style="display:none; margin-top:12px; padding:10px; background:rgba(59,130,246,0.1); border-radius:8px; font-size:0.84rem; color:#93c5fd;">
+                        <strong>💡 Erklärung:</strong> ${escapeHTML(q.explanation || 'Keine Erklärung.')}
+                    </div>
+                `;
+                area.appendChild(div);
+            });
+        }
+
+        // ─── 5. Sync, Download & Smart Merge ────────────────────────
+        function renderSyncView() {
+            if (!db) return;
+
+            const uCount = (queryDB("SELECT COUNT(*) as c FROM learning_units")[0] || {}).c || 0;
+            const cCount = (queryDB("SELECT COUNT(*) as c FROM anki_cards")[0] || {}).c || 0;
+            const sCount = (queryDB("SELECT COUNT(*) as c FROM study_sessions")[0] || {}).c || 0;
+            const qCount = (queryDB("SELECT COUNT(*) as c FROM pending_anki_sync")[0] || {}).c || 0;
+
+            document.getElementById('db-info-stats').innerHTML = `
+                📊 <strong>${uCount}</strong> Lerneinheiten | <strong>${cCount}</strong> Altfragen<br>
+                ⏱️ <strong>${sCount}</strong> Lernsessions protokolliert<br>
+                📥 <strong>${qCount}</strong> Anki-Aufträge in Warteschlange
+            `;
+
+            // Queue List
+            const queueItems = queryDB(`
+                SELECT p.*, lu.title
+                FROM pending_anki_sync p
+                LEFT JOIN learning_units lu ON p.unit_id = lu.id
+                ORDER BY p.id DESC
+            `);
+            document.getElementById('anki-queue-count').innerText = `${queueItems.length} Aufträge`;
+            const qContainer = document.getElementById('anki-queue-list');
+            qContainer.innerHTML = "";
+
+            if (queueItems.length === 0) {
+                qContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.82rem; padding:6px 0;">Keine ausstehenden Aufträge. Alles synchron!</div>`;
+            } else {
+                queueItems.forEach(item => {
+                    const div = document.createElement('div');
+                    div.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.84rem;";
+                    div.innerHTML = `
+                        <div>
+                            <strong>${escapeHTML(item.title || `Einheit #${item.unit_id}`)}</strong>
+                            <div style="font-size:0.75rem; color:var(--text-muted);">${item.tag || 'MedStudy::Behandelt'} · ${item.created_at || 'Heute'}</div>
+                        </div>
+                        <button class="btn-couple btn-couple-off" onclick="deleteQueueItem(${item.id})">Entfernen</button>
+                    `;
+                    qContainer.appendChild(div);
+                });
+            }
+        }
+
+        function deleteQueueItem(id) {
+            execDB("DELETE FROM pending_anki_sync WHERE id = ?", [id]);
+            showToast("Auftrag aus Warteschlange entfernt.");
+            renderSyncView();
+            renderDashboard();
+        }
+
+        function saveDatabaseToFile() {
+            if (!db) return;
+            try {
+                const binaryArray = db.export();
+                const blob = new Blob([binaryArray], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = "medStudy.db";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                markClean();
+                showToast("💾 Datenbank 'medStudy.db' erfolgreich heruntergeladen!");
+            } catch (e) {
+                alert("Fehler beim Exportieren: " + e.message);
+            }
+        }
+
+        // ─── Smart Multi-Version DB Merge (Last-Write-Wins) ─────────
+        document.getElementById('merge-file-input').addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !db) return;
+
+            showToast("Analysiere zweite Datenbank...");
+            try {
+                const SQL = await sqlPromise;
+                const reader = new FileReader();
+                reader.onload = async function() {
+                    try {
+                        const secondDb = new SQL.Database(new Uint8Array(reader.result));
+                        const report = executeSmartDbMerge(secondDb);
+                        
+                        const resultBox = document.getElementById('merge-result-box');
+                        resultBox.style.display = 'block';
+                        resultBox.innerHTML = `
+                            <strong>✅ Smart Merge erfolgreich abgeschlossen!</strong><br>
+                            • ${report.completedUnits} Lerneinheiten aktualisiert / abgeschlossen<br>
+                            • ${report.newSessions} Lernsessions neu übernommen<br>
+                            • ${report.manualCouples} Altfragen-Kopplungen synchronisiert<br>
+                            • ${report.ankiQueued} Anki-Aufträge zusammengeführt<br>
+                            <em>Die zusammengeführte Datenbank ist jetzt aktiv und gespeichert.</em>
+                        `;
+                        markDirty();
+                        renderDashboard();
+                        renderUnitsList();
+                        renderSyncView();
+                        showToast("✨ Datenbanken erfolgreich zusammengeführt!");
+                    } catch (mErr) {
+                        alert("Fehler beim Mergen: " + mErr.message);
+                    }
+                };
+                reader.readAsArrayBuffer(file);
+            } catch (err) {
+                alert("Merge-Fehler: " + err.message);
+            }
+        });
+
+        function executeSmartDbMerge(secondDb) {
+            const report = { completedUnits: 0, newSessions: 0, manualCouples: 0, ankiQueued: 0 };
+
+            // 1. Merge learning_units (Last-Write-Wins / Status union)
+            const secondUnits = queryDBInInstance(secondDb, "SELECT * FROM learning_units");
+            secondUnits.forEach(u2 => {
+                const u1 = queryDB("SELECT * FROM learning_units WHERE id = ?", [u2.id])[0];
+                if (!u1) return;
+
+                let shouldUpdate = false;
+                let newStatus = u1.status;
+                let newCompletedAt = u1.completed_at;
+                let newNotes = u1.notes;
+
+                // Status merge
+                if (u2.status === 'completed' && u1.status !== 'completed') {
+                    newStatus = 'completed';
+                    newCompletedAt = u2.completed_at || new Date().toISOString();
+                    shouldUpdate = true;
+                    report.completedUnits++;
+                } else if (u2.status === 'completed' && u1.status === 'completed') {
+                    // Compare timestamps: keep newer
+                    if (u2.completed_at && (!u1.completed_at || u2.completed_at > u1.completed_at)) {
+                        newCompletedAt = u2.completed_at;
+                        shouldUpdate = true;
+                    }
+                }
+
+                // Notes merge (longer or non-empty wins)
+                if (u2.notes && (!u1.notes || u2.notes.length > u1.notes.length)) {
+                    newNotes = u2.notes;
+                    shouldUpdate = true;
+                }
+
+                if (shouldUpdate) {
+                    execDB(`
+                        UPDATE learning_units
+                        SET status = ?, completed_at = ?, notes = ?
+                        WHERE id = ?
+                    `, [newStatus, newCompletedAt, newNotes, u1.id]);
+                }
+            });
+
+            // 2. Merge study_sessions (deduplicate by unit_id + completed_at)
+            const secondSessions = queryDBInInstance(secondDb, "SELECT * FROM study_sessions");
+            secondSessions.forEach(s2 => {
+                const existing = queryDB("SELECT id FROM study_sessions WHERE unit_id = ? AND completed_at = ?", [s2.unit_id, s2.completed_at]);
+                if (existing.length === 0 && s2.completed_at) {
+                    execDB(`
+                        INSERT INTO study_sessions (unit_id, started_at, completed_at, duration_minutes, notes)
+                        VALUES (?, ?, ?, ?, ?)
+                    `, [s2.unit_id, s2.started_at, s2.completed_at, s2.duration_minutes, s2.notes]);
+                    report.newSessions++;
+                }
+            });
+
+            // 3. Merge card_page_matches (manual overrides)
+            const secondMatches = queryDBInInstance(secondDb, "SELECT * FROM card_page_matches WHERE is_manual != 0");
+            secondMatches.forEach(m2 => {
+                const m1 = queryDB("SELECT id, is_manual FROM card_page_matches WHERE card_id = ? AND lecture_id = ?", [m2.card_id, m2.lecture_id])[0];
+                if (m1 && m1.is_manual === 0) {
+                    execDB("UPDATE card_page_matches SET is_manual = ? WHERE id = ?", [m2.is_manual, m1.id]);
+                    report.manualCouples++;
+                }
+            });
+
+            // 4. Merge pending_anki_sync
+            const secondQueue = queryDBInInstance(secondDb, "SELECT * FROM pending_anki_sync");
+            secondQueue.forEach(q2 => {
+                const existing = queryDB("SELECT id FROM pending_anki_sync WHERE unit_id = ?", [q2.unit_id]);
+                if (existing.length === 0) {
+                    execDB(`
+                        INSERT INTO pending_anki_sync (unit_id, add_tag, update_links, unsuspend, open_browser, tag, created_at)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    `, [q2.unit_id, q2.add_tag, q2.update_links, q2.unsuspend, q2.open_browser, q2.tag, q2.created_at]);
+                    report.ankiQueued++;
+                }
+            });
+
+            return report;
+        }
+
+        function queryDBInInstance(targetDb, sql, params = []) {
+            try {
+                const stmt = targetDb.prepare(sql);
+                stmt.bind(params);
+                const results = [];
+                while (stmt.step()) results.push(stmt.getAsObject());
+                stmt.free();
+                return results;
+            } catch (e) {
+                return [];
+            }
+        }
+
+        // ─── Helpers ────────────────────────────────────────────────
+        function showToast(msg) {
+            const toast = document.getElementById('toast');
+            toast.innerText = msg;
+            toast.classList.add('active');
+            setTimeout(() => toast.classList.remove('active'), 2800);
         }
 
         function escapeHTML(str) {
             if (!str) return "";
-            return str
+            return String(str)
                 .replace(/&/g, "&amp;")
                 .replace(/</g, "&lt;")
                 .replace(/>/g, "&gt;")
