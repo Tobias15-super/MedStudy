@@ -817,7 +817,7 @@
             <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
             Datenbank auswählen
         </label>
-        <input type="file" id="db-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept="application/octet-stream,.db,.sqlite,.sqlite3">
+        <input type="file" id="db-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/x-sqlite3,application/vnd.sqlite3,*/*">
     </div>
 
     <!-- ─── Top Header ────────────────────────────────────────────── -->
@@ -1031,7 +1031,7 @@
                 <label for="merge-file-input" class="btn-action-secondary" style="display: block; text-align: center; cursor: pointer; border-color: var(--primary); color: #93c5fd;">
                     ✨ Zweite DB auswählen & zusammenführen
                 </label>
-                <input type="file" id="merge-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3">
+                <input type="file" id="merge-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/x-sqlite3,application/vnd.sqlite3,*/*">
 
                 <div id="merge-result-box" style="display: none; margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); font-size: 0.84rem; color: #a7f3d0;"></div>
             </div>
