@@ -1086,19 +1086,6 @@
                 
                 <!-- Tab: Info -->
                 <div class="modal-tab-pane active" id="tab-unit-info">
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;">
-                        <div class="stat-box">
-                            <div class="stat-label">Klinische Relevanz</div>
-                            <div class="stat-value" id="m-unit-rel-clinical" style="font-size: 1.1rem;">3/5</div>
-                        </div>
-                        <div class="stat-box">
-                            <div class="stat-label">Prüfungsrelevanz</div>
-                            <div class="stat-value" id="m-unit-rel-exam" style="font-size: 1.1rem; color: var(--accent-amber);">3/5</div>
-                        </div>
-                    </div>
-
-                    <div id="m-unit-rel-note" style="font-size: 0.85rem; color: var(--text-secondary); background: rgba(0,0,0,0.25); padding: 10px; border-radius: var(--radius-md); margin-bottom: 14px; line-height: 1.45;"></div>
-
                     <h4 style="font-size: 0.88rem; font-weight: 700; margin-bottom: 6px;">🎯 Lernziele</h4>
                     <ul id="m-unit-objectives" style="padding-left: 18px; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 14px;"></ul>
 
@@ -1199,7 +1186,8 @@
 
         const IDB_NAME = "MedStudyMobileApp";
         const IDB_STORE = "database";
-        const IDB_KEY = "medstudy_sqlite_db";
+        const IDB_KEY_MAIN = "medstudy_sqlite_db";
+        const IDB_KEY_STATIC = "medstudy_static_sqlite_db";
 
         // SQL.js Initialization
         const sqlPromise = initSqlJs({
@@ -1207,31 +1195,50 @@
         });
 
         // ─── IndexedDB Storage Helpers ──────────────────────────────
-        function saveToIndexedDB(arrayBuffer) {
+        function saveToIndexedDB(arrayBuffer, key = IDB_KEY_MAIN) {
             return new Promise((resolve) => {
                 const req = indexedDB.open(IDB_NAME, 1);
                 req.onupgradeneeded = (e) => e.target.result.createObjectStore(IDB_STORE);
                 req.onsuccess = (e) => {
                     const tx = e.target.result.transaction(IDB_STORE, "readwrite");
-                    tx.objectStore(IDB_STORE).put(arrayBuffer, IDB_KEY);
+                    tx.objectStore(IDB_STORE).put(arrayBuffer, key);
                     tx.oncomplete = () => resolve(true);
                 };
                 req.onerror = () => resolve(false);
             });
         }
 
-        function loadFromIndexedDB() {
+        function loadFromIndexedDB(key = IDB_KEY_MAIN) {
             return new Promise((resolve) => {
                 const req = indexedDB.open(IDB_NAME, 1);
                 req.onupgradeneeded = (e) => e.target.result.createObjectStore(IDB_STORE);
                 req.onsuccess = (e) => {
                     const tx = e.target.result.transaction(IDB_STORE, "readonly");
-                    const getReq = tx.objectStore(IDB_STORE).get(IDB_KEY);
+                    const getReq = tx.objectStore(IDB_STORE).get(key);
                     getReq.onsuccess = () => resolve(getReq.result || null);
                     getReq.onerror = () => resolve(null);
                 };
                 req.onerror = () => resolve(null);
             });
+        }
+
+        async function attachStaticDbIfAvailable(SQL, database) {
+            try {
+                const staticBuffer = await loadFromIndexedDB(IDB_KEY_STATIC);
+                if (staticBuffer && staticBuffer.byteLength > 0) {
+                    try {
+                        SQL.FS.writeFile('/medStudy_static.db', new Uint8Array(staticBuffer));
+                    } catch (fsErr) {}
+                    try {
+                        database.run("ATTACH DATABASE '/medStudy_static.db' AS static_db");
+                        console.log("[Mobile] Static DB successfully attached!");
+                    } catch (attachErr) {
+                        console.warn("[Mobile] Attach static_db warning:", attachErr);
+                    }
+                }
+            } catch (e) {
+                console.warn("[Mobile] Static DB check:", e);
+            }
         }
 
         // ─── Database Query Helpers ─────────────────────────────────
@@ -1273,7 +1280,7 @@
             // Auto-persist binary to IndexedDB in background
             try {
                 const data = db.export();
-                saveToIndexedDB(data.buffer);
+                saveToIndexedDB(data.buffer, IDB_KEY_MAIN);
             } catch (e) {}
         }
 
@@ -1285,7 +1292,7 @@
 
         // ─── App Startup ────────────────────────────────────────────
         window.addEventListener('DOMContentLoaded', async () => {
-            const cachedBuffer = await loadFromIndexedDB();
+            const cachedBuffer = await loadFromIndexedDB(IDB_KEY_MAIN);
             if (cachedBuffer) {
                 try {
                     document.getElementById('loader-spinner').style.display = 'block';
@@ -1294,6 +1301,7 @@
                     
                     const SQL = await sqlPromise;
                     db = new SQL.Database(new Uint8Array(cachedBuffer));
+                    await attachStaticDbIfAvailable(SQL, db);
                     initAppViews();
                 } catch (e) {
                     console.error("Cache load failed:", e);
@@ -1308,21 +1316,39 @@
             const file = e.target.files[0];
             if (!file) return;
 
+            const isStatic = file.name.toLowerCase().includes('static');
+
             document.getElementById('loader').style.display = 'flex';
             document.getElementById('loader').style.opacity = '1';
             document.getElementById('loader-spinner').style.display = 'block';
             document.getElementById('db-pick-label').style.display = 'none';
-            document.getElementById('loader-msg').innerText = `Lade Datei (${Math.round(file.size / 1024)} KB)...`;
+            document.getElementById('loader-msg').innerText = `Lade ${isStatic ? 'statische ' : ''}Datei (${Math.round(file.size / 1024)} KB)...`;
 
             try {
                 const SQL = await sqlPromise;
                 const reader = new FileReader();
                 reader.onload = async function() {
                     try {
-                        db = new SQL.Database(new Uint8Array(reader.result));
-                        await saveToIndexedDB(reader.result);
-                        initAppViews();
-                        showToast("Datenbank erfolgreich geladen!");
+                        if (isStatic) {
+                            await saveToIndexedDB(reader.result, IDB_KEY_STATIC);
+                            if (db) {
+                                try {
+                                    SQL.FS.writeFile('/medStudy_static.db', new Uint8Array(reader.result));
+                                    db.run("ATTACH DATABASE '/medStudy_static.db' AS static_db");
+                                } catch (attErr) {}
+                                renderUnitsList();
+                                renderCardsList();
+                            }
+                            document.getElementById('loader').style.opacity = '0';
+                            setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 250);
+                            showToast("Statische Vektordatenbank erfolgreich im Browser gespeichert!");
+                        } else {
+                            db = new SQL.Database(new Uint8Array(reader.result));
+                            await saveToIndexedDB(reader.result, IDB_KEY_MAIN);
+                            await attachStaticDbIfAvailable(SQL, db);
+                            initAppViews();
+                            showToast("Datenbank erfolgreich geladen!");
+                        }
                     } catch (dbErr) {
                         alert("Fehler beim Öffnen der SQLite-Datenbank: " + dbErr.message);
                         document.getElementById('loader-spinner').style.display = 'none';
@@ -1661,9 +1687,6 @@
             if (!u) return;
 
             document.getElementById('m-unit-title').innerText = u.title;
-            document.getElementById('m-unit-rel-clinical').innerText = `${u.clinical_relevance || 3}/5 ★`;
-            document.getElementById('m-unit-rel-exam').innerText = `${u.exam_relevance || 3}/5 ★`;
-            document.getElementById('m-unit-rel-note').innerText = u.exam_relevance_note || u.clinical_relevance_note || "Keine KI-Notiz vorhanden.";
 
             // Learning Objectives
             const objList = document.getElementById('m-unit-objectives');
