@@ -1282,6 +1282,28 @@
             }
         }
 
+        function isStaticDbAttached() {
+            if (!db) return false;
+            try {
+                const res = queryDB("PRAGMA database_list");
+                return res.some(r => r.name === 'static_db');
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function getCardsTableName() {
+            if (isStaticDbAttached()) return "static_db.anki_cards";
+            const inMain = queryDB("SELECT name FROM sqlite_master WHERE type='table' AND name='anki_cards'");
+            return inMain.length > 0 ? "anki_cards" : null;
+        }
+
+        function getLecturePagesTableName() {
+            if (isStaticDbAttached()) return "static_db.lecture_pages";
+            const inMain = queryDB("SELECT name FROM sqlite_master WHERE type='table' AND name='lecture_pages'");
+            return inMain.length > 0 ? "lecture_pages" : null;
+        }
+
         // ─── Database Query Helpers ─────────────────────────────────
         function queryDB(sql, params = []) {
             if (!db) return [];
@@ -1461,7 +1483,7 @@
             document.getElementById('dash-progress-bar').style.width = `${pct}%`;
             document.getElementById('stat-completed').innerText = completed;
 
-            // Target Pace (Soll-Stand)
+            // Target Pace (Soll-Stand laut Lernplan in der DB)
             const settingsRows = queryDB("SELECT key, value FROM settings");
             const settings = {};
             settingsRows.forEach(r => settings[r.key] = r.value);
@@ -1474,10 +1496,21 @@
             const examT = new Date(examDateStr).getTime();
             const todayT = new Date(todayStr).getTime();
 
-            let targetUnits = 0;
-            if (examT > startT && total > 0) {
+            // Soll-Stand: Exakt wie im Backend alle Einheiten, die bis einschließlich heute geplant sind
+            const scheduledRow = queryDB(
+                "SELECT COUNT(*) as count FROM learning_units WHERE scheduled_date IS NOT NULL AND scheduled_date != '' AND scheduled_date <= ?",
+                [todayStr]
+            )[0] || { count: 0 };
+
+            let targetUnits = scheduledRow.count || 0;
+            targetUnits = Math.min(targetUnits, total);
+
+            // Fallback: Falls noch keine Datumsangaben generiert wurden, Puffer-Tage einrechnen
+            if (targetUnits === 0 && examT > startT && total > 0) {
+                const bufferDays = parseInt(settings.exam_buffer_days || "10", 10);
+                const targetEndT = examT - (bufferDays * 24 * 60 * 60 * 1000);
                 const elapsedDays = Math.max(0, (todayT - startT) / (1000 * 60 * 60 * 24));
-                const totalDays = Math.max(1, (examT - startT) / (1000 * 60 * 60 * 24));
+                const totalDays = Math.max(1, (targetEndT - startT) / (1000 * 60 * 60 * 24));
                 const paceRatio = Math.min(1.0, elapsedDays / totalDays);
                 targetUnits = Math.round(total * paceRatio);
             }
@@ -1835,17 +1868,31 @@
         }
 
         function renderUnitSlideTexts(unitId) {
+            const container = document.getElementById('m-unit-slides-list');
+            container.innerHTML = "";
+
+            const table = getLecturePagesTableName();
+            if (!table) {
+                container.innerHTML = `
+                    <div style="padding:14px; text-align:center; background:rgba(255,255,255,0.03); border:1px dashed var(--border); border-radius:var(--radius-sm); margin:10px 0;">
+                        <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:6px;">📦 <strong>Statische Datenbank nicht geladen</strong></p>
+                        <p style="color:var(--text-muted); font-size:0.78rem; margin-bottom:10px;">Folientexte befinden sich in der <code>medStudy_static.db</code> (~170 MB).</p>
+                        <label for="db-static-file-input" class="btn-action-secondary" style="font-size:0.8rem; padding:6px 12px; cursor:pointer; display:inline-block;">
+                            📦 medStudy_static.db importieren
+                        </label>
+                    </div>
+                `;
+                return;
+            }
+
             const pages = queryDB(`
                 SELECT lp.page_number, lp.text_content, l.filename
-                FROM lecture_pages lp
+                FROM ${table} lp
                 JOIN unit_lectures ul ON lp.lecture_id = ul.lecture_id
                 JOIN lectures l ON lp.lecture_id = l.id
                 WHERE ul.unit_id = ?
                 ORDER BY l.filename, lp.page_number ASC
             `, [unitId]);
-
-            const container = document.getElementById('m-unit-slides-list');
-            container.innerHTML = "";
 
             if (pages.length === 0) {
                 container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine Folientexte in der Datenbank gespeichert.</p>`;
@@ -1876,9 +1923,27 @@
         }
 
         function renderUnitAltfragen(unitId) {
+            const container = document.getElementById('m-unit-cards-list');
+            container.innerHTML = "";
+
+            const table = getCardsTableName();
+            if (!table) {
+                document.getElementById('m-count-cards').innerText = "0";
+                container.innerHTML = `
+                    <div style="padding:14px; text-align:center; background:rgba(255,255,255,0.03); border:1px dashed var(--border); border-radius:var(--radius-sm); margin:10px 0;">
+                        <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:6px;">📦 <strong>Statische Datenbank nicht geladen</strong></p>
+                        <p style="color:var(--text-muted); font-size:0.78rem; margin-bottom:10px;">Altfragen befinden sich in der <code>medStudy_static.db</code> (~170 MB).</p>
+                        <label for="db-static-file-input" class="btn-action-secondary" style="font-size:0.8rem; padding:6px 12px; cursor:pointer; display:inline-block;">
+                            📦 medStudy_static.db importieren
+                        </label>
+                    </div>
+                `;
+                return;
+            }
+
             const cards = queryDB(`
                 SELECT DISTINCT ac.*, cpm.confidence_score, cpm.is_manual, cpm.page_number, cpm.lecture_id, l.filename as lecture_filename
-                FROM anki_cards ac
+                FROM ${table} ac
                 JOIN card_page_matches cpm ON ac.id = cpm.card_id
                 JOIN unit_lectures ul ON cpm.lecture_id = ul.lecture_id
                 JOIN lectures l ON cpm.lecture_id = l.id
@@ -1887,8 +1952,6 @@
             `, [unitId]);
 
             document.getElementById('m-count-cards').innerText = cards.length;
-            const container = document.getElementById('m-unit-cards-list');
-            container.innerHTML = "";
 
             if (cards.length === 0) {
                 container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine Altfragen zu dieser Einheit gematcht.</p>`;
@@ -2135,12 +2198,34 @@
 
         function renderCardsList() {
             if (!db) return;
+            const container = document.getElementById('cards-container');
+            const infoEl = document.getElementById('cards-count-info');
+            container.innerHTML = "";
+
+            const table = getCardsTableName();
+            if (!table) {
+                if (infoEl) infoEl.innerText = "0 Altfragen";
+                container.innerHTML = `
+                    <div class="card" style="text-align:center; padding:28px 16px; margin-top:14px; border-color:var(--border);">
+                        <div style="font-size:2.2rem; margin-bottom:8px;">📦</div>
+                        <h3 style="font-size:1.05rem; font-weight:700; margin-bottom:6px;">medStudy_static.db nicht geladen</h3>
+                        <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45; max-width:320px; margin:0 auto 16px auto;">
+                            Die Altfragen und Folientexte (~170 MB) sind in der statischen Datenbank ausgelagert. Importiere sie <strong>einmalig</strong> im Browser, um alle Altfragen mobil nutzen zu können!
+                        </p>
+                        <label for="db-static-file-input" class="btn-action-primary" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding:10px 18px; font-size:0.88rem;">
+                            <span>📦 medStudy_static.db importieren (1x)</span>
+                        </label>
+                    </div>
+                `;
+                return;
+            }
+
             const search = document.getElementById('cards-search').value.toLowerCase().trim();
 
             let sql = `
                 SELECT DISTINCT ac.id, ac.question, ac.answer, ac.appearance_count, ac.frequency_trend,
                     cpm.confidence_score, cpm.is_manual, cpm.lecture_id, cpm.page_number, l.block_id, l.filename as lecture_name, b.name as block_name
-                FROM anki_cards ac
+                FROM ${table} ac
                 JOIN card_page_matches cpm ON ac.id = cpm.card_id
                 JOIN lectures l ON cpm.lecture_id = l.id
                 LEFT JOIN blocks b ON l.block_id = b.id
@@ -2164,9 +2249,6 @@
             sql += " ORDER BY cpm.confidence_score DESC LIMIT 60";
 
             const cards = queryDB(sql, params);
-            const container = document.getElementById('cards-container');
-            const infoEl = document.getElementById('cards-count-info');
-            container.innerHTML = "";
 
             const filtered = cards.filter(c => {
                 if (!search) return true;
@@ -2283,8 +2365,8 @@
                 try {
                     const staticBuf = await loadFromIndexedDB(IDB_KEY_STATIC);
                     if (staticBuf && staticBuf.byteLength > 0) {
-                        const sizeMb = (staticBuf.byteLength / (1024 * 1024)).toFixed(1);
-                        const cCount = (queryDB("SELECT COUNT(*) as c FROM anki_cards")[0] || {}).c || 0;
+                        const cardsTable = getCardsTableName();
+                        const cCount = cardsTable ? ((queryDB(`SELECT COUNT(*) as c FROM ${cardsTable}`)[0] || {}).c || 0) : 0;
                         staticBadge.className = "badge badge-completed";
                         staticBadge.innerText = "✓ Gespeichert";
                         staticStats.innerHTML = `
@@ -2354,7 +2436,7 @@
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 markClean();
-                showToast("💾 Datenbank 'medStudy.db' erfolgreich heruntergeladen!");
+                showToast("💾 Hauptdatenbank 'medStudy.db' (~1.7 MB) erfolgreich heruntergeladen!");
             } catch (e) {
                 alert("Fehler beim Exportieren: " + e.message);
             }
