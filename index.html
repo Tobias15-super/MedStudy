@@ -809,15 +809,27 @@
         <div class="spinner" id="loader-spinner" style="display: none;"></div>
         <div style="font-size: 2.2rem; margin-bottom: 8px;">🩺</div>
         <h2 style="font-size: 1.4rem; font-weight: 700; margin-bottom: 6px;">MedStudy Mobile</h2>
-        <p id="loader-msg" style="color: var(--text-secondary); font-size: 0.88rem; max-width: 320px; line-height: 1.4; margin-bottom: 12px;">
+        <p id="loader-msg" style="color: var(--text-secondary); font-size: 0.88rem; max-width: 330px; line-height: 1.45; margin-bottom: 14px;">
             Wähle deine <strong>medStudy.db</strong> aus oder lade aus dem Cache.
         </p>
         
-        <label for="db-file-input" class="upload-btn" id="db-pick-label">
-            <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-            Datenbank auswählen
-        </label>
+        <div style="display:flex; flex-direction:column; gap:10px; width:100%; max-width:320px; margin-bottom:14px;">
+            <label for="db-file-input" class="upload-btn" id="db-pick-label" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+                <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                <span>📘 Haupt-DB (medStudy.db) wählen</span>
+            </label>
+            <label for="db-static-file-input" class="btn-action-secondary" id="db-static-pick-label" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; text-align:center; padding:10px; font-size:0.85rem;">
+                <span>📦 Statik-DB (medStudy_static.db) importieren</span>
+            </label>
+        </div>
         <input type="file" id="db-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/x-sqlite3,application/vnd.sqlite3,*/*">
+        <input type="file" id="db-static-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/x-sqlite3,application/vnd.sqlite3,*/*">
+
+        <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4; max-width:320px; background:rgba(0,0,0,0.25); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border);">
+            💡 <strong>Automatische Erkennung:</strong><br>
+            • <strong>medStudy.db (~2 MB):</strong> Lernplan & Fortschritt. Wird täglich synchronisiert.<br>
+            • <strong>medStudy_static.db (~170 MB):</strong> Folientexte & Altfragen. Wird <em>einmalig</em> im Browser gespeichert.
+        </div>
     </div>
 
     <!-- ─── Top Header ────────────────────────────────────────────── -->
@@ -884,10 +896,14 @@
 
             <!-- Overdue Warning Card -->
             <div class="card" id="dash-overdue-card" style="display: none; border-color: rgba(239, 68, 68, 0.4); background: rgba(239, 68, 68, 0.06);">
-                <div class="card-title" style="color: var(--accent-red); margin-bottom: 6px;">
-                    🚨 Überfällige Lerneinheiten!
+                <div class="card-header" style="margin-bottom: 6px;">
+                    <div class="card-title" style="color: var(--accent-red);">
+                        🚨 Überfällige Lerneinheiten
+                    </div>
+                    <span id="dash-overdue-badge" class="badge badge-overdue">0 überfällig</span>
                 </div>
-                <p id="dash-overdue-text" style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4;"></p>
+                <p id="dash-overdue-text" style="font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 10px;"></p>
+                <div id="dash-overdue-list"></div>
             </div>
 
             <!-- Today's Plan -->
@@ -923,6 +939,7 @@
 
             <div class="filter-bar" style="margin-bottom: 14px;">
                 <button class="filter-pill active" id="unit-status-all" onclick="setUnitStatusFilter('all')">Alle</button>
+                <button class="filter-pill" id="unit-status-overdue" onclick="setUnitStatusFilter('overdue')" style="color: var(--accent-red); border-color: rgba(239, 68, 68, 0.4);">🚨 Überfällig</button>
                 <button class="filter-pill" id="unit-status-open" onclick="setUnitStatusFilter('open')">Offen</button>
                 <button class="filter-pill" id="unit-status-inprogress" onclick="setUnitStatusFilter('inprogress')">In Arbeit</button>
                 <button class="filter-pill" id="unit-status-completed" onclick="setUnitStatusFilter('completed')">Erledigt</button>
@@ -982,25 +999,49 @@
         <!-- ─── 5. VIEW: SYNC & DATENBANK-MANAGER ──────────────────── -->
         <section id="view-sync" class="view-section">
             
-            <!-- Database Status -->
+            <!-- Main Database Status -->
             <div class="card">
                 <div class="card-header">
-                    <div class="card-title">💾 Datenbank-Status</div>
+                    <div class="card-title">📘 Hauptdatenbank (medStudy.db)</div>
                     <span id="db-status-badge" class="badge badge-completed">Bereit</span>
                 </div>
                 
+                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 8px;">
+                    Enthält deinen aktuellen Lernplan, Fortschritt, Sessions, Notizen und Queue-Aufträge (~2 MB).
+                </p>
+
                 <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary);" id="db-info-stats">
                     Keine Datenbank geladen.
                 </div>
 
                 <div style="display: flex; gap: 10px; margin-top: 14px;">
                     <button class="btn-action-primary" onclick="saveDatabaseToFile()">
-                        💾 DB herunterladen
+                        💾 medStudy.db herunterladen
                     </button>
                     <label for="db-file-input" class="btn-action-secondary" style="text-align: center; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
                         🔄 Neu laden
                     </label>
                 </div>
+            </div>
+
+            <!-- Static Database Status Card -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-title">📦 Statische Vektordatenbank (medStudy_static.db)</div>
+                    <span id="static-db-status-badge" class="badge badge-pending">Wird geprüft...</span>
+                </div>
+                
+                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 10px;">
+                    Enthält Vorlesungsfolientexte, Lehrbücher und Anki-Karten (~170 MB). Bleibt dauerhaft im Browser-Speicher (IndexedDB) erhalten und muss <strong>nur einmalig importiert</strong> werden.
+                </p>
+
+                <div style="font-size: 0.85rem; line-height: 1.5; color: var(--text-secondary); margin-bottom: 12px;" id="static-db-info-stats">
+                    Status wird ermittelt...
+                </div>
+
+                <label for="db-static-file-input" class="btn-action-secondary" style="display: block; text-align: center; cursor: pointer; border-color: var(--accent-teal); color: #5eead4;">
+                    📦 medStudy_static.db importieren / aktualisieren
+                </label>
             </div>
 
             <!-- Anki Queue Card -->
@@ -1312,16 +1353,16 @@
             }
         });
 
-        document.getElementById('db-file-input').addEventListener('change', async (e) => {
-            const file = e.target.files[0];
+        async function handleUploadedDbFile(file, forceStatic = false) {
             if (!file) return;
-
-            const isStatic = file.name.toLowerCase().includes('static');
+            const isStatic = forceStatic || file.name.toLowerCase().includes('static');
 
             document.getElementById('loader').style.display = 'flex';
             document.getElementById('loader').style.opacity = '1';
             document.getElementById('loader-spinner').style.display = 'block';
             document.getElementById('db-pick-label').style.display = 'none';
+            const staticPickLabel = document.getElementById('db-static-pick-label');
+            if (staticPickLabel) staticPickLabel.style.display = 'none';
             document.getElementById('loader-msg').innerText = `Lade ${isStatic ? 'statische ' : ''}Datei (${Math.round(file.size / 1024)} KB)...`;
 
             try {
@@ -1338,6 +1379,7 @@
                                 } catch (attErr) {}
                                 renderUnitsList();
                                 renderCardsList();
+                                renderSyncView();
                             }
                             document.getElementById('loader').style.opacity = '0';
                             setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 250);
@@ -1347,19 +1389,31 @@
                             await saveToIndexedDB(reader.result, IDB_KEY_MAIN);
                             await attachStaticDbIfAvailable(SQL, db);
                             initAppViews();
-                            showToast("Datenbank erfolgreich geladen!");
+                            showToast("Hauptdatenbank erfolgreich geladen!");
                         }
                     } catch (dbErr) {
                         alert("Fehler beim Öffnen der SQLite-Datenbank: " + dbErr.message);
                         document.getElementById('loader-spinner').style.display = 'none';
                         document.getElementById('db-pick-label').style.display = 'inline-flex';
+                        if (staticPickLabel) staticPickLabel.style.display = 'inline-flex';
                     }
                 };
                 reader.readAsArrayBuffer(file);
             } catch (err) {
                 alert("Fehler: " + err.message);
             }
+        }
+
+        document.getElementById('db-file-input').addEventListener('change', (e) => {
+            handleUploadedDbFile(e.target.files[0], false);
         });
+
+        const staticFileInput = document.getElementById('db-static-file-input');
+        if (staticFileInput) {
+            staticFileInput.addEventListener('change', (e) => {
+                handleUploadedDbFile(e.target.files[0], true);
+            });
+        }
 
         function initAppViews() {
             document.getElementById('loader').style.opacity = '0';
@@ -1481,7 +1535,10 @@
 
             // Overdue Units Check
             const overdue = queryDB(`
-                SELECT lu.id, lu.title, b.name as block_name, lu.scheduled_date
+                SELECT lu.*, b.name as block_name,
+                    (SELECT COUNT(*) FROM clinical_facts WHERE unit_id = lu.id) as fact_count,
+                    (SELECT COUNT(DISTINCT cpm.card_id) FROM unit_lectures ul JOIN card_page_matches cpm ON ul.lecture_id = cpm.lecture_id WHERE ul.unit_id = lu.id AND ((cpm.confidence_score >= 0.55 AND cpm.is_manual != -1) OR cpm.is_manual = 1)) as card_count,
+                    (SELECT COUNT(*) FROM pending_anki_sync WHERE unit_id = lu.id) as in_anki_queue
                 FROM learning_units lu
                 LEFT JOIN blocks b ON lu.block_id = b.id
                 WHERE lu.status != 'completed' AND lu.scheduled_date IS NOT NULL AND lu.scheduled_date != '' AND lu.scheduled_date < ?
@@ -1489,9 +1546,16 @@
             `, [todayStr]);
 
             const overdueCard = document.getElementById('dash-overdue-card');
+            const overdueList = document.getElementById('dash-overdue-list');
             if (overdue.length > 0) {
                 overdueCard.style.display = 'block';
-                document.getElementById('dash-overdue-text').innerHTML = `Du hast <strong>${overdue.length} überfällige Lerneinheit${overdue.length !== 1 ? 'en' : ''}</strong> aus vergangenen Tagen.`;
+                const overdueBadge = document.getElementById('dash-overdue-badge');
+                if (overdueBadge) overdueBadge.innerText = `${overdue.length} überfällig`;
+                document.getElementById('dash-overdue-text').innerHTML = `Du hast <strong>${overdue.length} überfällige Lerneinheit${overdue.length !== 1 ? 'en' : ''}</strong> aus vergangenen Tagen:`;
+                if (overdueList) {
+                    overdueList.innerHTML = "";
+                    overdue.forEach(u => overdueList.appendChild(createUnitCardElement(u)));
+                }
             } else {
                 overdueCard.style.display = 'none';
             }
@@ -1615,9 +1679,16 @@
                 params.push(currentUnitBlockFilter);
             }
 
-            if (currentUnitStatusFilter === 'open') sql += " AND lu.status = 'not_started'";
-            else if (currentUnitStatusFilter === 'inprogress') sql += " AND lu.status = 'in_progress'";
-            else if (currentUnitStatusFilter === 'completed') sql += " AND lu.status = 'completed'";
+            if (currentUnitStatusFilter === 'open') {
+                sql += " AND lu.status = 'not_started'";
+            } else if (currentUnitStatusFilter === 'overdue') {
+                const todayStr = new Date().toISOString().split('T')[0];
+                sql += ` AND lu.status != 'completed' AND lu.scheduled_date IS NOT NULL AND lu.scheduled_date != '' AND lu.scheduled_date < '${todayStr}'`;
+            } else if (currentUnitStatusFilter === 'inprogress') {
+                sql += " AND lu.status = 'in_progress'";
+            } else if (currentUnitStatusFilter === 'completed') {
+                sql += " AND lu.status = 'completed'";
+            }
 
             sql += " ORDER BY b.sort_order ASC, lu.sort_order ASC, lu.id ASC";
 
@@ -2190,20 +2261,48 @@
             });
         }
 
-        // ─── 5. Sync, Download & Smart Merge ────────────────────────
-        function renderSyncView() {
+        async function renderSyncView() {
             if (!db) return;
 
             const uCount = (queryDB("SELECT COUNT(*) as c FROM learning_units")[0] || {}).c || 0;
-            const cCount = (queryDB("SELECT COUNT(*) as c FROM anki_cards")[0] || {}).c || 0;
             const sCount = (queryDB("SELECT COUNT(*) as c FROM study_sessions")[0] || {}).c || 0;
             const qCount = (queryDB("SELECT COUNT(*) as c FROM pending_anki_sync")[0] || {}).c || 0;
 
-            document.getElementById('db-info-stats').innerHTML = `
-                📊 <strong>${uCount}</strong> Lerneinheiten | <strong>${cCount}</strong> Altfragen<br>
-                ⏱️ <strong>${sCount}</strong> Lernsessions protokolliert<br>
-                📥 <strong>${qCount}</strong> Anki-Aufträge in Warteschlange
-            `;
+            const dbInfo = document.getElementById('db-info-stats');
+            if (dbInfo) {
+                dbInfo.innerHTML = `
+                    📊 <strong>${uCount}</strong> Lerneinheiten | ⏱️ <strong>${sCount}</strong> Lernsessions<br>
+                    📥 <strong>${qCount}</strong> Anki-Aufträge in Warteschlange
+                `;
+            }
+
+            // Statische Datenbank Status prüfen
+            const staticBadge = document.getElementById('static-db-status-badge');
+            const staticStats = document.getElementById('static-db-info-stats');
+            if (staticBadge && staticStats) {
+                try {
+                    const staticBuf = await loadFromIndexedDB(IDB_KEY_STATIC);
+                    if (staticBuf && staticBuf.byteLength > 0) {
+                        const sizeMb = (staticBuf.byteLength / (1024 * 1024)).toFixed(1);
+                        const cCount = (queryDB("SELECT COUNT(*) as c FROM anki_cards")[0] || {}).c || 0;
+                        staticBadge.className = "badge badge-completed";
+                        staticBadge.innerText = "✓ Gespeichert";
+                        staticStats.innerHTML = `
+                            💾 <strong>${sizeMb} MB</strong> im lokalen Browser-Speicher<br>
+                            🔗 <strong>${cCount}</strong> Altfragen & Folientexte verknüpft
+                        `;
+                    } else {
+                        staticBadge.className = "badge badge-pending";
+                        staticBadge.innerText = "Nicht vorhanden";
+                        staticStats.innerHTML = `
+                            ⚠️ <em>Noch keine medStudy_static.db importiert.</em><br>
+                            (Folientexte und Altfragen werden erst nach einmaligem Import angezeigt)
+                        `;
+                    }
+                } catch (e) {
+                    staticBadge.innerText = "Unbekannt";
+                }
+            }
 
             // Queue List
             const queueItems = queryDB(`
