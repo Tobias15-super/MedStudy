@@ -1464,6 +1464,16 @@
         }
 
         function initAppViews() {
+            if (db) {
+                try {
+                    const cols = queryDB("PRAGMA table_info(learning_units)").map(c => c.name);
+                    if (!cols.includes("is_ignored")) {
+                        execDB("ALTER TABLE learning_units ADD COLUMN is_ignored INTEGER DEFAULT 0");
+                    }
+                } catch (e) {
+                    console.warn("Schema auto-upgrade:", e);
+                }
+            }
             document.getElementById('loader').style.opacity = '0';
             setTimeout(() => {
                 document.getElementById('loader').style.display = 'none';
