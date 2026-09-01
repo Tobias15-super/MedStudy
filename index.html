@@ -1295,18 +1295,15 @@
             });
         }
 
-        async function attachStaticDbIfAvailable(SQL, database) {
+        async function initStaticDbIfAvailable(SQL) {
             try {
                 const staticBuffer = await loadFromIndexedDB(IDB_KEY_STATIC);
                 if (staticBuffer && staticBuffer.byteLength > 0) {
                     try {
-                        SQL.FS.writeFile('/medStudy_static.db', new Uint8Array(staticBuffer));
-                    } catch (fsErr) {}
-                    try {
-                        database.run("ATTACH DATABASE '/medStudy_static.db' AS static_db");
-                        console.log("[Mobile] Static DB successfully attached!");
-                    } catch (attachErr) {
-                        console.warn("[Mobile] Attach static_db warning:", attachErr);
+                        staticDb = new SQL.Database(new Uint8Array(staticBuffer));
+                        console.log("[Mobile] Static DB instance ready in WASM! Size:", staticBuffer.byteLength);
+                    } catch (instErr) {
+                        console.warn("[Mobile] Static DB instance error:", instErr);
                     }
                 }
             } catch (e) {
@@ -1314,26 +1311,21 @@
             }
         }
 
-        function isStaticDbAttached() {
-            if (!db) return false;
+        function queryStaticDB(sql, params = []) {
+            if (!staticDb) return [];
             try {
-                const res = queryDB("PRAGMA database_list");
-                return res.some(r => r.name === 'static_db');
+                const stmt = staticDb.prepare(sql);
+                stmt.bind(params);
+                const results = [];
+                while (stmt.step()) {
+                    results.push(stmt.getAsObject());
+                }
+                stmt.free();
+                return results;
             } catch (e) {
-                return false;
+                console.error("Static DB Query Error:", sql, e);
+                return [];
             }
-        }
-
-        function getCardsTableName() {
-            if (isStaticDbAttached()) return "static_db.anki_cards";
-            const inMain = queryDB("SELECT name FROM sqlite_master WHERE type='table' AND name='anki_cards'");
-            return inMain.length > 0 ? "anki_cards" : null;
-        }
-
-        function getLecturePagesTableName() {
-            if (isStaticDbAttached()) return "static_db.lecture_pages";
-            const inMain = queryDB("SELECT name FROM sqlite_master WHERE type='table' AND name='lecture_pages'");
-            return inMain.length > 0 ? "lecture_pages" : null;
         }
 
         // ─── Database Query Helpers ─────────────────────────────────
@@ -1387,21 +1379,26 @@
 
         // ─── App Startup ────────────────────────────────────────────
         window.addEventListener('DOMContentLoaded', async () => {
+            const SQL = await sqlPromise;
+            await initStaticDbIfAvailable(SQL);
+
             const cachedBuffer = await loadFromIndexedDB(IDB_KEY_MAIN);
             if (cachedBuffer) {
                 try {
                     document.getElementById('loader-spinner').style.display = 'block';
                     document.getElementById('db-pick-label').style.display = 'none';
+                    const staticPick = document.getElementById('db-static-pick-label');
+                    if (staticPick) staticPick.style.display = 'none';
                     document.getElementById('loader-msg').innerText = "Lade Datenbank aus lokalem Speicher...";
                     
-                    const SQL = await sqlPromise;
                     db = new SQL.Database(new Uint8Array(cachedBuffer));
-                    await attachStaticDbIfAvailable(SQL, db);
                     initAppViews();
                 } catch (e) {
                     console.error("Cache load failed:", e);
                     document.getElementById('loader-spinner').style.display = 'none';
                     document.getElementById('db-pick-label').style.display = 'inline-flex';
+                    const staticPick = document.getElementById('db-static-pick-label');
+                    if (staticPick) staticPick.style.display = 'inline-flex';
                     document.getElementById('loader-msg').innerText = "Wähle deine medStudy.db Datei.";
                 }
             }
@@ -1426,22 +1423,19 @@
                     try {
                         if (isStatic) {
                             await saveToIndexedDB(reader.result, IDB_KEY_STATIC);
+                            staticDb = new SQL.Database(new Uint8Array(reader.result));
                             if (db) {
-                                try {
-                                    SQL.FS.writeFile('/medStudy_static.db', new Uint8Array(reader.result));
-                                    db.run("ATTACH DATABASE '/medStudy_static.db' AS static_db");
-                                } catch (attErr) {}
                                 renderUnitsList();
                                 renderCardsList();
-                                renderSyncView();
+                                await renderSyncView();
                             }
                             document.getElementById('loader').style.opacity = '0';
                             setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 250);
-                            showToast("Statische Vektordatenbank erfolgreich im Browser gespeichert!");
+                            showToast("Statische Vektordatenbank erfolgreich gespeichert!");
                         } else {
                             db = new SQL.Database(new Uint8Array(reader.result));
                             await saveToIndexedDB(reader.result, IDB_KEY_MAIN);
-                            await attachStaticDbIfAvailable(SQL, db);
+                            await initStaticDbIfAvailable(SQL);
                             initAppViews();
                             showToast("Hauptdatenbank erfolgreich geladen!");
                         }
@@ -1903,8 +1897,7 @@
             const container = document.getElementById('m-unit-slides-list');
             container.innerHTML = "";
 
-            const table = getLecturePagesTableName();
-            if (!table) {
+            if (!staticDb) {
                 container.innerHTML = `
                     <div style="padding:14px; text-align:center; background:rgba(255,255,255,0.03); border:1px dashed var(--border); border-radius:var(--radius-sm); margin:10px 0;">
                         <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:6px;">📦 <strong>Statische Datenbank nicht geladen</strong></p>
@@ -1917,21 +1910,40 @@
                 return;
             }
 
-            const pages = queryDB(`
-                SELECT lp.page_number, lp.text_content, l.filename
-                FROM ${table} lp
-                JOIN unit_lectures ul ON lp.lecture_id = ul.lecture_id
-                JOIN lectures l ON lp.lecture_id = l.id
+            const lecs = queryDB(`
+                SELECT l.id, l.filename
+                FROM unit_lectures ul
+                JOIN lectures l ON ul.lecture_id = l.id
                 WHERE ul.unit_id = ?
-                ORDER BY l.filename, lp.page_number ASC
             `, [unitId]);
 
-            if (pages.length === 0) {
-                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine Folientexte in der Datenbank gespeichert.</p>`;
+            if (lecs.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine Vorlesungen dieser Einheit zugewiesen.</p>`;
                 return;
             }
 
-            pages.forEach(p => {
+            const allPages = [];
+            lecs.forEach(lec => {
+                const pages = queryStaticDB(`
+                    SELECT page_number, text_content
+                    FROM lecture_pages
+                    WHERE lecture_id = ?
+                    ORDER BY page_number ASC
+                `, [lec.id]);
+                pages.forEach(p => {
+                    allPages.push({
+                        ...p,
+                        filename: lec.filename
+                    });
+                });
+            });
+
+            if (allPages.length === 0) {
+                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine Folientexte in der statischen Datenbank gefunden.</p>`;
+                return;
+            }
+
+            allPages.forEach(p => {
                 if (!p.text_content || p.text_content.trim().length === 0) return;
                 const div = document.createElement('div');
                 div.className = 'slide-text-item';
@@ -1958,8 +1970,7 @@
             const container = document.getElementById('m-unit-cards-list');
             container.innerHTML = "";
 
-            const table = getCardsTableName();
-            if (!table) {
+            if (!staticDb) {
                 document.getElementById('m-count-cards').innerText = "0";
                 container.innerHTML = `
                     <div style="padding:14px; text-align:center; background:rgba(255,255,255,0.03); border:1px dashed var(--border); border-radius:var(--radius-sm); margin:10px 0;">
@@ -1973,15 +1984,34 @@
                 return;
             }
 
-            const cards = queryDB(`
-                SELECT DISTINCT ac.*, cpm.confidence_score, cpm.is_manual, cpm.page_number, cpm.lecture_id, l.filename as lecture_filename
-                FROM ${table} ac
-                JOIN card_page_matches cpm ON ac.id = cpm.card_id
+            const matches = queryDB(`
+                SELECT cpm.card_id, cpm.confidence_score, cpm.is_manual, cpm.page_number, cpm.lecture_id, l.filename as lecture_filename
+                FROM card_page_matches cpm
                 JOIN unit_lectures ul ON cpm.lecture_id = ul.lecture_id
                 JOIN lectures l ON cpm.lecture_id = l.id
                 WHERE ul.unit_id = ?
                 ORDER BY cpm.confidence_score DESC
             `, [unitId]);
+
+            const cardIds = [...new Set(matches.map(m => m.card_id))];
+            const cardMap = {};
+            if (cardIds.length > 0) {
+                const placeholders = cardIds.map(() => '?').join(',');
+                const cardRows = queryStaticDB(`
+                    SELECT id, question, answer, appearance_count, frequency_trend
+                    FROM anki_cards
+                    WHERE id IN (${placeholders})
+                `, cardIds);
+                cardRows.forEach(c => cardMap[c.id] = c);
+            }
+
+            const cards = matches.map(m => {
+                const c = cardMap[m.card_id] || {};
+                return {
+                    ...c,
+                    ...m
+                };
+            }).filter(c => c.question);
 
             document.getElementById('m-count-cards').innerText = cards.length;
 
@@ -1998,11 +2028,11 @@
                 acc.innerHTML = `
                     <div class="card-acc-header" onclick="toggleAccBody(this)">
                         <div style="flex:1; padding-right:6px;">
-                            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">#${c.id}</span>
-                            <div style="font-size:0.88rem; font-weight:500; margin-top:2px;">${escapeHTML(c.question.replace(/<[^>]*>/g,'').substring(0, 80))}...</div>
+                            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">#${c.card_id || c.id}</span>
+                            <div style="font-size:0.88rem; font-weight:500; margin-top:2px;">${escapeHTML((c.question || '').replace(/<[^>]*>/g,'').substring(0, 80))}...</div>
                         </div>
                         <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-                            <span class="badge ${isCoupled ? 'badge-completed' : 'badge-pending'}">${Math.round(c.confidence_score * 100)}%</span>
+                            <span class="badge ${isCoupled ? 'badge-completed' : 'badge-pending'}">${Math.round((c.confidence_score || 0) * 100)}%</span>
                         </div>
                     </div>
                     <div class="card-acc-body">
@@ -2269,8 +2299,7 @@
             const infoEl = document.getElementById('cards-count-info');
             container.innerHTML = "";
 
-            const table = getCardsTableName();
-            if (!table) {
+            if (!staticDb) {
                 if (infoEl) infoEl.innerText = "0 Altfragen";
                 container.innerHTML = `
                     <div class="card" style="text-align:center; padding:28px 16px; margin-top:14px; border-color:var(--border);">
@@ -2289,11 +2318,9 @@
 
             const search = document.getElementById('cards-search').value.toLowerCase().trim();
 
-            let sql = `
-                SELECT DISTINCT ac.id, ac.question, ac.answer, ac.appearance_count, ac.frequency_trend,
-                    cpm.confidence_score, cpm.is_manual, cpm.lecture_id, cpm.page_number, l.block_id, l.filename as lecture_name, b.name as block_name
-                FROM ${table} ac
-                JOIN card_page_matches cpm ON ac.id = cpm.card_id
+            let matchSql = `
+                SELECT DISTINCT cpm.card_id, cpm.confidence_score, cpm.is_manual, cpm.lecture_id, cpm.page_number, l.block_id, l.filename as lecture_name, b.name as block_name
+                FROM card_page_matches cpm
                 JOIN lectures l ON cpm.lecture_id = l.id
                 LEFT JOIN blocks b ON l.block_id = b.id
                 WHERE 1=1
@@ -2301,25 +2328,48 @@
             const params = [];
 
             if (currentCardBlockFilter !== 'all') {
-                sql += " AND l.block_id = ?";
+                matchSql += " AND l.block_id = ?";
                 params.push(currentCardBlockFilter);
             }
 
             if (currentCardCoupleFilter === 'linked') {
-                sql += " AND ((cpm.confidence_score >= 0.55 AND (cpm.is_manual IS NULL OR cpm.is_manual != -1)) OR cpm.is_manual = 1)";
+                matchSql += " AND ((cpm.confidence_score >= 0.55 AND (cpm.is_manual IS NULL OR cpm.is_manual != -1)) OR cpm.is_manual = 1)";
             } else if (currentCardCoupleFilter === 'candidate') {
-                sql += " AND cpm.confidence_score < 0.55 AND cpm.is_manual = 0";
+                matchSql += " AND cpm.confidence_score < 0.55 AND cpm.is_manual = 0";
             } else if (currentCardCoupleFilter === 'manual') {
-                sql += " AND (cpm.is_manual = 1 OR cpm.is_manual = -1)";
+                matchSql += " AND (cpm.is_manual = 1 OR cpm.is_manual = -1)";
             }
 
-            sql += " ORDER BY cpm.confidence_score DESC LIMIT 60";
+            matchSql += " ORDER BY cpm.confidence_score DESC LIMIT 100";
 
-            const cards = queryDB(sql, params);
+            const matches = queryDB(matchSql, params);
+            const cardIds = [...new Set(matches.map(m => m.card_id))];
+
+            let cards = [];
+            if (cardIds.length > 0) {
+                const placeholders = cardIds.map(() => '?').join(',');
+                const cardRows = queryStaticDB(`
+                    SELECT id, question, answer, appearance_count, frequency_trend
+                    FROM anki_cards
+                    WHERE id IN (${placeholders})
+                `, cardIds);
+                const cardMap = {};
+                cardRows.forEach(c => cardMap[c.id] = c);
+
+                cards = matches.map(m => {
+                    const c = cardMap[m.card_id] || {};
+                    return {
+                        ...c,
+                        ...m
+                    };
+                }).filter(c => c.question);
+            } else if (currentCardCoupleFilter === 'all' && currentCardBlockFilter === 'all') {
+                cards = queryStaticDB("SELECT id, question, answer, appearance_count, frequency_trend FROM anki_cards LIMIT 60");
+            }
 
             const filtered = cards.filter(c => {
                 if (!search) return true;
-                return c.question.toLowerCase().includes(search) || c.answer.toLowerCase().includes(search);
+                return (c.question || '').toLowerCase().includes(search) || (c.answer || '').toLowerCase().includes(search);
             });
 
             infoEl.innerText = `${filtered.length} Altfragen angezeigt`;
@@ -2333,27 +2383,33 @@
                 const isCoupled = (c.is_manual === 1) || (c.is_manual !== -1 && c.confidence_score >= 0.55);
                 const acc = document.createElement('div');
                 acc.className = 'card-accordion';
-                
                 acc.innerHTML = `
                     <div class="card-acc-header" onclick="toggleAccBody(this)">
                         <div style="flex:1; padding-right:6px;">
-                            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">#${c.id} · ${escapeHTML(c.block_name ? c.block_name.split('-')[0].trim() : '')}</span>
-                            <div style="font-size:0.88rem; font-weight:500; margin-top:2px;">${escapeHTML(c.question.replace(/<[^>]*>/g,'').substring(0, 85))}...</div>
+                            <div style="display:flex; gap:6px; align-items:center; margin-bottom:2px;">
+                                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">#${c.card_id || c.id}</span>
+                                ${c.block_name ? `<span class="badge" style="background:rgba(255,255,255,0.06); font-size:0.7rem;">${escapeHTML(c.block_name.split('-')[0].trim())}</span>` : ''}
+                            </div>
+                            <div style="font-size:0.88rem; font-weight:500;">${escapeHTML((c.question || '').replace(/<[^>]*>/g,'').substring(0, 85))}...</div>
                         </div>
-                        <span class="badge ${isCoupled ? 'badge-completed' : 'badge-pending'}">${Math.round(c.confidence_score * 100)}%</span>
+                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
+                            ${c.confidence_score !== undefined ? `<span class="badge ${isCoupled ? 'badge-completed' : 'badge-pending'}">${Math.round(c.confidence_score * 100)}%</span>` : ''}
+                        </div>
                     </div>
                     <div class="card-acc-body">
                         <div style="font-weight:600; color:var(--primary); margin-bottom:4px;">Frage:</div>
-                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:10px; white-space:pre-wrap;">${escapeHTML(c.question.replace(/<[^>]*>/g,''))}</div>
+                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:10px; white-space:pre-wrap;">${escapeHTML((c.question || '').replace(/<[^>]*>/g,''))}</div>
                         <div style="font-weight:600; color:var(--accent-teal); margin-bottom:4px;">Antwort:</div>
-                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:12px; white-space:pre-wrap;">${escapeHTML(c.answer.replace(/<[^>]*>/g,''))}</div>
+                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:12px; white-space:pre-wrap;">${escapeHTML((c.answer || '').replace(/<[^>]*>/g,''))}</div>
                         
+                        ${c.lecture_name ? `
                         <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px;">
                             <span class="source-badge">📄 ${escapeHTML(c.lecture_name.replace('.pdf',''))} (S. ${c.page_number})</span>
-                            <button class="btn-couple ${isCoupled ? 'btn-couple-off' : 'btn-couple-on'}" onclick="toggleCardCoupling(${c.id}, ${c.lecture_id}, ${isCoupled ? -1 : 1})">
+                            <button class="btn-couple ${isCoupled ? 'btn-couple-off' : 'btn-couple-on'}" onclick="toggleCardCoupling(${c.card_id || c.id}, ${c.lecture_id}, ${isCoupled ? -1 : 1})">
                                 ${isCoupled ? '❌ Entkoppeln' : '🔗 Koppeln'}
                             </button>
                         </div>
+                        ` : ''}
                     </div>
                 `;
                 container.appendChild(acc);
@@ -2433,13 +2489,17 @@
                     const staticBuf = await loadFromIndexedDB(IDB_KEY_STATIC);
                     if (staticBuf && staticBuf.byteLength > 0) {
                         const sizeMb = (staticBuf.byteLength / (1024 * 1024)).toFixed(1);
-                        const cardsTable = getCardsTableName();
-                        const cCount = cardsTable ? ((queryDB(`SELECT COUNT(*) as c FROM ${cardsTable}`)[0] || {}).c || 0) : 0;
+                        if (!staticDb) {
+                            const SQL = await sqlPromise;
+                            staticDb = new SQL.Database(new Uint8Array(staticBuf));
+                        }
+                        const cCount = staticDb ? ((queryStaticDB("SELECT COUNT(*) as c FROM anki_cards")[0] || {}).c || 0) : 0;
+                        const pagesCount = staticDb ? ((queryStaticDB("SELECT COUNT(*) as c FROM lecture_pages")[0] || {}).c || 0) : 0;
                         staticBadge.className = "badge badge-completed";
                         staticBadge.innerText = "✓ Gespeichert";
                         staticStats.innerHTML = `
                             💾 <strong>${sizeMb} MB</strong> im lokalen Browser-Speicher<br>
-                            🔗 <strong>${cCount}</strong> Altfragen & Folientexte verknüpft
+                            🔗 <strong>${cCount}</strong> Altfragen & <strong>${pagesCount}</strong> Folientexte verknüpft
                         `;
                     } else {
                         staticBadge.className = "badge badge-pending";
