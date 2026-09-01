@@ -753,23 +753,30 @@
         /* ─── Toast Notifications ──────────────────────────────────── */
         #toast {
             position: fixed;
-            bottom: calc(var(--nav-height) + 20px);
+            bottom: calc(var(--nav-height) + 16px);
             left: 50%;
-            transform: translateX(-50%) translateY(100px);
+            transform: translateX(-50%) translateY(20px);
             background: #1e293b;
             border: 1px solid var(--border-hover);
-            padding: 10px 20px;
+            padding: 10px 18px;
             border-radius: var(--radius-md);
-            font-size: 0.88rem;
+            font-size: 0.86rem;
             font-weight: 500;
-            box-shadow: var(--shadow-lg);
-            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.6);
+            transition: opacity 0.25s ease, transform 0.25s ease, visibility 0.25s;
             z-index: 3000;
             text-align: center;
-            white-space: nowrap;
+            max-width: 88vw;
+            width: max-content;
+            line-height: 1.35;
+            word-break: break-word;
+            opacity: 0;
+            visibility: hidden;
             pointer-events: none;
         }
         #toast.active {
+            opacity: 1;
+            visibility: visible;
             transform: translateX(-50%) translateY(0);
         }
 
@@ -1051,9 +1058,34 @@
                     <span id="anki-queue-count" class="badge badge-anki-queue">0 Aufträge</span>
                 </div>
                 
-                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 10px;">
-                    Alle Lerneinheiten, die du mobil als gelernt markierst oder in die Anki-Queue einreihst, werden hier gesammelt. Sobald du MedStudy am PC startest, arbeitet das Backend alle Aufträge vollautomatisch ab!
+                <p style="font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; margin-bottom: 12px;">
+                    Alle Lerneinheiten, die du mobil abschließt oder in die Anki-Queue einreihst, werden hier gesammelt. Sobald du MedStudy am PC startest, synchronisiert das Backend alle Aufträge vollautomatisch in dein Anki!
                 </p>
+
+                <!-- Sync Options Toggles -->
+                <div style="background: rgba(0,0,0,0.2); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 14px;">
+                    <div style="font-size: 0.84rem; font-weight: 600; color: var(--text-primary); margin-bottom: 8px;">
+                        ⚙️ Standard-Aktionen für mobile Sync-Aufträge:
+                    </div>
+                    <div style="display: flex; flex-direction: column; gap: 8px; font-size: 0.82rem;">
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="mobile-anki-opt-tag" checked onchange="saveMobileAnkiSyncOptions()" style="accent-color: var(--accent-blue);">
+                            <span>🏷️ Als behandelt taggen (<code>MedStudy::Behandelt</code>)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="mobile-anki-opt-links" checked onchange="saveMobileAnkiSyncOptions()" style="accent-color: var(--accent-blue);">
+                            <span>🔗 Vorlesungs-Links auf Karten erstellen / prüfen</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="mobile-anki-opt-unsuspend" onchange="saveMobileAnkiSyncOptions()" style="accent-color: var(--accent-blue);">
+                            <span>🔓 Aussetzung der Karten aufheben (Unsuspend)</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; cursor: pointer;">
+                            <input type="checkbox" id="mobile-anki-opt-browse" onchange="saveMobileAnkiSyncOptions()" style="accent-color: var(--accent-blue);">
+                            <span>🔍 Nach Sync im Anki-Browser öffnen</span>
+                        </label>
+                    </div>
+                </div>
 
                 <div id="anki-queue-list"></div>
             </div>
@@ -2115,6 +2147,39 @@
             document.getElementById('input-completion-time').value = m;
         }
 
+        function getMobileAnkiSyncOptions() {
+            try {
+                const stored = localStorage.getItem('medstudy_anki_sync_options');
+                if (stored) return JSON.parse(stored);
+            } catch(e) {}
+            return {
+                add_tag: true,
+                update_links: true,
+                unsuspend: false,
+                open_browser: false
+            };
+        }
+
+        function saveMobileAnkiSyncOptions() {
+            const opts = {
+                add_tag: document.getElementById('mobile-anki-opt-tag')?.checked ?? true,
+                update_links: document.getElementById('mobile-anki-opt-links')?.checked ?? true,
+                unsuspend: document.getElementById('mobile-anki-opt-unsuspend')?.checked ?? false,
+                open_browser: document.getElementById('mobile-anki-opt-browse')?.checked ?? false
+            };
+            localStorage.setItem('medstudy_anki_sync_options', JSON.stringify(opts));
+            // Bestehende offene Aufträge mit neuen Optionen aktualisieren
+            if (db) {
+                execDB(`
+                    UPDATE pending_anki_sync
+                    SET add_tag = ?, update_links = ?, unsuspend = ?, open_browser = ?
+                `, [opts.add_tag ? 1 : 0, opts.update_links ? 1 : 0, opts.unsuspend ? 1 : 0, opts.open_browser ? 1 : 0]);
+            }
+            showToast("⚙️ Anki-Optionen gespeichert!");
+            renderSyncView();
+            return opts;
+        }
+
         function confirmCompleteUnit() {
             if (!pendingCompletionUnitId) return;
             const mins = parseInt(document.getElementById('input-completion-time').value) || 45;
@@ -2136,12 +2201,13 @@
                 WHERE id = ?
             `, [unitId]);
 
-            // Enqueue in pending_anki_sync
+            // Enqueue in pending_anki_sync mit gespeicherten Optionen
             if (autoQueue) {
+                const aOpts = getMobileAnkiSyncOptions();
                 execDB(`
                     INSERT INTO pending_anki_sync (unit_id, add_tag, update_links, unsuspend, open_browser, tag)
-                    VALUES (?, 1, 1, 0, 0, 'MedStudy::Behandelt')
-                `, [unitId]);
+                    VALUES (?, ?, ?, ?, ?, 'MedStudy::Behandelt')
+                `, [unitId, aOpts.add_tag ? 1 : 0, aOpts.update_links ? 1 : 0, aOpts.unsuspend ? 1 : 0, aOpts.open_browser ? 1 : 0]);
             }
 
             closeUnitModal();
@@ -2152,11 +2218,12 @@
         }
 
         function enqueueAnkiSync(unitId) {
+            const aOpts = getMobileAnkiSyncOptions();
             execDB(`
                 INSERT INTO pending_anki_sync (unit_id, add_tag, update_links, unsuspend, open_browser, tag)
-                VALUES (?, 1, 1, 0, 0, 'MedStudy::Behandelt')
+                VALUES (?, ?, ?, ?, ?, 'MedStudy::Behandelt')
                 ON CONFLICT DO NOTHING
-            `, [unitId]);
+            `, [unitId, aOpts.add_tag ? 1 : 0, aOpts.update_links ? 1 : 0, aOpts.unsuspend ? 1 : 0, aOpts.open_browser ? 1 : 0]);
             showToast("📥 In Anki-Warteschlange eingereiht!");
             renderDashboard();
             renderUnitsList();
@@ -2365,6 +2432,7 @@
                 try {
                     const staticBuf = await loadFromIndexedDB(IDB_KEY_STATIC);
                     if (staticBuf && staticBuf.byteLength > 0) {
+                        const sizeMb = (staticBuf.byteLength / (1024 * 1024)).toFixed(1);
                         const cardsTable = getCardsTableName();
                         const cCount = cardsTable ? ((queryDB(`SELECT COUNT(*) as c FROM ${cardsTable}`)[0] || {}).c || 0) : 0;
                         staticBadge.className = "badge badge-completed";
@@ -2382,9 +2450,21 @@
                         `;
                     }
                 } catch (e) {
-                    staticBadge.innerText = "Unbekannt";
+                    console.error("renderSyncView error:", e);
+                    staticBadge.innerText = "Fehler";
                 }
             }
+
+            // Sync Options Checkboxen initialisieren
+            const mobileOpts = getMobileAnkiSyncOptions();
+            const elTag = document.getElementById('mobile-anki-opt-tag');
+            const elLinks = document.getElementById('mobile-anki-opt-links');
+            const elUnsuspend = document.getElementById('mobile-anki-opt-unsuspend');
+            const elBrowse = document.getElementById('mobile-anki-opt-browse');
+            if (elTag) elTag.checked = !!mobileOpts.add_tag;
+            if (elLinks) elLinks.checked = !!mobileOpts.update_links;
+            if (elUnsuspend) elUnsuspend.checked = !!mobileOpts.unsuspend;
+            if (elBrowse) elBrowse.checked = !!mobileOpts.open_browser;
 
             // Queue List
             const queueItems = queryDB(`
@@ -2401,12 +2481,20 @@
                 qContainer.innerHTML = `<div style="color:var(--text-muted); font-size:0.82rem; padding:6px 0;">Keine ausstehenden Aufträge. Alles synchron!</div>`;
             } else {
                 queueItems.forEach(item => {
+                    const badges = [];
+                    if (item.add_tag === 1) badges.push('🏷️ Tag');
+                    if (item.update_links === 1) badges.push('🔗 Links');
+                    if (item.unsuspend === 1) badges.push('🔓 Unsuspend');
+                    if (item.open_browser === 1) badges.push('🔍 Browser');
+                    const badgesHtml = badges.length > 0 ? `<div style="display:flex; gap:4px; margin-top:3px; flex-wrap:wrap;">${badges.map(b => `<span style="font-size:0.7rem; background:rgba(255,255,255,0.06); padding:1px 5px; border-radius:4px; border:1px solid var(--border);">${b}</span>`).join('')}</div>` : '';
+
                     const div = document.createElement('div');
                     div.style.cssText = "display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border); font-size:0.84rem;";
                     div.innerHTML = `
-                        <div>
+                        <div style="flex:1; padding-right:8px;">
                             <strong>${escapeHTML(item.title || `Einheit #${item.unit_id}`)}</strong>
                             <div style="font-size:0.75rem; color:var(--text-muted);">${item.tag || 'MedStudy::Behandelt'} · ${item.created_at || 'Heute'}</div>
+                            ${badgesHtml}
                         </div>
                         <button class="btn-couple btn-couple-off" onclick="deleteQueueItem(${item.id})">Entfernen</button>
                     `;
@@ -2577,11 +2665,16 @@
         }
 
         // ─── Helpers ────────────────────────────────────────────────
+        let toastTimeout = null;
         function showToast(msg) {
             const toast = document.getElementById('toast');
+            if (!toast) return;
             toast.innerText = msg;
             toast.classList.add('active');
-            setTimeout(() => toast.classList.remove('active'), 2800);
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.classList.remove('active');
+            }, 3000);
         }
 
         function escapeHTML(str) {
