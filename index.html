@@ -1498,8 +1498,16 @@
         function renderDashboard() {
             if (!db) return;
 
-            const totalRow = queryDB("SELECT COUNT(*) as count FROM learning_units")[0] || { count: 0 };
-            const completedRow = queryDB("SELECT COUNT(*) as count FROM learning_units WHERE status = 'completed'")[0] || { count: 0 };
+            const totalRow = queryDB(`
+                SELECT COUNT(*) as count FROM learning_units lu
+                LEFT JOIN blocks b ON lu.block_id = b.id
+                WHERE (lu.is_ignored = 0 OR lu.is_ignored IS NULL) AND (b.is_ignored = 0 OR b.is_ignored IS NULL)
+            `)[0] || { count: 0 };
+            const completedRow = queryDB(`
+                SELECT COUNT(*) as count FROM learning_units lu
+                LEFT JOIN blocks b ON lu.block_id = b.id
+                WHERE lu.status = 'completed' AND (lu.is_ignored = 0 OR lu.is_ignored IS NULL) AND (b.is_ignored = 0 OR b.is_ignored IS NULL)
+            `)[0] || { count: 0 };
             const total = totalRow.count || 0;
             const completed = completedRow.count || 0;
             const pct = total > 0 ? Math.round((completed / total) * 100) : 0;
@@ -1523,10 +1531,12 @@
             const todayT = new Date(todayStr).getTime();
 
             // Soll-Stand: Exakt wie im Backend alle Einheiten, die bis einschließlich heute geplant sind
-            const scheduledRow = queryDB(
-                "SELECT COUNT(*) as count FROM learning_units WHERE scheduled_date IS NOT NULL AND scheduled_date != '' AND scheduled_date <= ?",
-                [todayStr]
-            )[0] || { count: 0 };
+            const scheduledRow = queryDB(`
+                SELECT COUNT(*) as count FROM learning_units lu
+                LEFT JOIN blocks b ON lu.block_id = b.id
+                WHERE lu.scheduled_date IS NOT NULL AND lu.scheduled_date != '' AND lu.scheduled_date <= ?
+                  AND (lu.is_ignored = 0 OR lu.is_ignored IS NULL) AND (b.is_ignored = 0 OR b.is_ignored IS NULL)
+            `, [todayStr])[0] || { count: 0 };
 
             let targetUnits = scheduledRow.count || 0;
             targetUnits = Math.min(targetUnits, total);
@@ -1546,11 +1556,22 @@
             sollMarker.style.left = `${sollPct}%`;
 
             const diff = completed - targetUnits;
-            const sollLabel = document.getElementById('dash-soll-label');
-            if (diff >= 0) {
-                sollLabel.innerHTML = `🚀 <strong style="color:#34d399">+${diff} im Voraus</strong> (Soll: ${targetUnits} Einheiten)`;
-            } else {
-                sollLabel.innerHTML = `⚠️ <strong style="color:#f87171">${Math.abs(diff)} hinter Soll-Plan</strong> (Soll: ${targetUnits} Einheiten)`;
+            const deviationEl = document.getElementById('dash-pace-deviation');
+            const targetUnitsEl = document.getElementById('dash-target-units');
+
+            if (targetUnitsEl) targetUnitsEl.innerText = targetUnits;
+
+            if (deviationEl) {
+                if (diff < 0) {
+                    deviationEl.className = "badge badge-behind";
+                    deviationEl.innerText = `⚠️ Soll: ${targetUnits} (${Math.abs(diff)} hinter Plan)`;
+                } else if (diff > 0) {
+                    deviationEl.className = "badge badge-ahead";
+                    deviationEl.innerText = `🚀 +${diff} vor Plan`;
+                } else {
+                    deviationEl.className = "badge badge-ontrack";
+                    deviationEl.innerText = `✓ Genau im Plan (${targetUnits})`;
+                }
             }
 
             // Exam Countdown
@@ -1601,6 +1622,7 @@
                 FROM learning_units lu
                 LEFT JOIN blocks b ON lu.block_id = b.id
                 WHERE lu.status != 'completed' AND lu.scheduled_date IS NOT NULL AND lu.scheduled_date != '' AND lu.scheduled_date < ?
+                  AND (lu.is_ignored = 0 OR lu.is_ignored IS NULL) AND (b.is_ignored = 0 OR b.is_ignored IS NULL)
                 ORDER BY lu.scheduled_date ASC
             `, [todayStr]);
 
@@ -1625,6 +1647,7 @@
                 FROM learning_units lu
                 LEFT JOIN blocks b ON lu.block_id = b.id
                 WHERE lu.scheduled_date = ?
+                  AND (lu.is_ignored = 0 OR lu.is_ignored IS NULL) AND (b.is_ignored = 0 OR b.is_ignored IS NULL)
                 ORDER BY lu.sort_order ASC
             `, [todayStr]);
 
@@ -1778,7 +1801,7 @@
             else if (u.status === 'in_progress') statusBadge = `<span class="badge badge-inprogress">⏳ In Arbeit</span>`;
 
             let queueBadge = '';
-            if (u.in_anki_queue > 0 || (u.status === 'completed' && u.anki_synced === 0)) {
+            if (u.in_anki_queue > 0) {
                 queueBadge = `<span class="badge badge-anki-queue" title="Wartet auf Synchronisierung am PC">📥 Anki Queue</span>`;
             }
 
@@ -2568,6 +2591,7 @@
             showToast("Auftrag aus Warteschlange entfernt.");
             renderSyncView();
             renderDashboard();
+            renderUnitsList();
         }
 
         function saveDatabaseToFile() {
