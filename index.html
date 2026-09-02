@@ -1563,24 +1563,17 @@
 
             const sollMarker = document.getElementById('dash-soll-marker');
             const sollPct = total > 0 ? Math.min(100, Math.round((targetUnits / total) * 100)) : 0;
-            sollMarker.style.left = `${sollPct}%`;
+            if (sollMarker) sollMarker.style.left = `${sollPct}%`;
 
             const diff = completed - targetUnits;
-            const deviationEl = document.getElementById('dash-pace-deviation');
-            const targetUnitsEl = document.getElementById('dash-target-units');
-
-            if (targetUnitsEl) targetUnitsEl.innerText = targetUnits;
-
-            if (deviationEl) {
+            const sollLabel = document.getElementById('dash-soll-label');
+            if (sollLabel) {
                 if (diff < 0) {
-                    deviationEl.className = "badge badge-behind";
-                    deviationEl.innerText = `⚠️ Soll: ${targetUnits} (${Math.abs(diff)} hinter Plan)`;
+                    sollLabel.innerHTML = `⚠️ <strong style="color:#f87171">Soll: ${targetUnits} von ${total} Einheiten</strong> (${Math.abs(diff)} hinter Plan)`;
                 } else if (diff > 0) {
-                    deviationEl.className = "badge badge-ahead";
-                    deviationEl.innerText = `🚀 +${diff} vor Plan`;
+                    sollLabel.innerHTML = `🚀 <strong style="color:#34d399">+${diff} vor Plan</strong> (Soll: ${targetUnits} von ${total} Einheiten)`;
                 } else {
-                    deviationEl.className = "badge badge-ontrack";
-                    deviationEl.innerText = `✓ Genau im Plan (${targetUnits})`;
+                    sollLabel.innerHTML = `✓ <strong style="color:#38bdf8">Genau im Plan</strong> (Soll: ${targetUnits} von ${total} Einheiten)`;
                 }
             }
 
