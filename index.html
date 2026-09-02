@@ -820,18 +820,23 @@
             Wähle deine <strong>medStudy.db</strong> aus oder lade aus dem Cache.
         </p>
         
-        <div style="display:flex; flex-direction:column; gap:10px; width:100%; max-width:320px; margin-bottom:14px;">
-            <button type="button" class="upload-btn" id="db-pick-label" onclick="pickFile('db-file-input')" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; width:100%; cursor:pointer;">
+        <div style="display:flex; flex-direction:column; gap:10px; width:100%; max-width:320px; margin-bottom:12px;">
+            <button type="button" class="upload-btn" id="db-server-load-btn" onclick="loadDbFromLocalServer('main')" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; width:100%; cursor:pointer; background:linear-gradient(135deg, #059669, #10b981);">
+                <span>⚡ Direkt vom PC laden (WLAN)</span>
+            </button>
+            <button type="button" class="btn-action-primary" id="db-pick-label" onclick="pickFile('db-file-input')" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; width:100%; cursor:pointer; padding:12px;">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
-                <span>📘 Haupt-DB (medStudy.db) wählen</span>
+                <span>📁 medStudy.db aus Dateien wählen</span>
             </button>
             <button type="button" class="btn-action-secondary" id="db-static-pick-label" onclick="pickFile('db-static-file-input')" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; text-align:center; padding:10px; font-size:0.85rem; width:100%;">
                 <span>📦 Statik-DB (medStudy_static.db) importieren</span>
             </button>
         </div>
-        <div style="font-size:0.8rem; color:#93c5fd; background:rgba(59,130,246,0.12); padding:10px 12px; border-radius:var(--radius-sm); border:1px solid rgba(59,130,246,0.3); max-width:320px; margin-bottom:12px; text-align:left; line-height:1.4;">
-            📱 <strong>Hinweis für iPhone & iPad:</strong><br>
-            Im Apple-Menü bitte <strong>"Datei auswählen"</strong> (📁 mit dem Ordner-Symbol) antippen – <em>nicht</em> Fotomediathek! So öffnet sich die Dateien-App.
+
+        <div style="font-size:0.8rem; color:#93c5fd; background:rgba(59,130,246,0.12); padding:10px 12px; border-radius:var(--radius-sm); border:1px solid rgba(59,130,246,0.3); max-width:320px; margin-bottom:12px; text-align:left; line-height:1.45;">
+            📱 <strong>Tipp für Smartphone & Tablet:</strong><br>
+            • <strong>Android:</strong> Öffnet sich die Galerie? Tippe oben links auf das <strong>☰ Menü</strong> oder <strong>⋮ Drei Punkte</strong> und wähle <em>Dateien / Eigene Dateien / Downloads</em>!<br>
+            • <strong>iOS / iPad:</strong> Im Menü bitte <strong>"Datei auswählen"</strong> (📁) antippen – <em>nicht</em> Fotomediathek.
         </div>
         <input type="file" id="db-file-input" style="display:none;">
         <input type="file" id="db-static-file-input" style="display:none;">
@@ -1386,11 +1391,22 @@
             const SQL = await sqlPromise;
             await initStaticDbIfAvailable(SQL);
 
+            // Server-Lade-Button anzeigen, wenn über PC-Server aufgerufen
+            const srvBtn = document.getElementById('db-server-load-btn');
+            if (srvBtn) {
+                if (window.location.protocol.startsWith('http') && (window.location.port === '8080' || !window.location.hostname.includes('github.io'))) {
+                    srvBtn.style.display = 'inline-flex';
+                } else {
+                    srvBtn.style.display = 'none';
+                }
+            }
+
             const cachedBuffer = await loadFromIndexedDB(IDB_KEY_MAIN);
             if (cachedBuffer) {
                 try {
                     document.getElementById('loader-spinner').style.display = 'block';
                     document.getElementById('db-pick-label').style.display = 'none';
+                    if (srvBtn) srvBtn.style.display = 'none';
                     const staticPick = document.getElementById('db-static-pick-label');
                     if (staticPick) staticPick.style.display = 'none';
                     document.getElementById('loader-msg').innerText = "Lade Datenbank aus lokalem Speicher...";
@@ -1401,6 +1417,7 @@
                     console.error("Cache load failed:", e);
                     document.getElementById('loader-spinner').style.display = 'none';
                     document.getElementById('db-pick-label').style.display = 'inline-flex';
+                    if (srvBtn) srvBtn.style.display = 'inline-flex';
                     const staticPick = document.getElementById('db-static-pick-label');
                     if (staticPick) staticPick.style.display = 'inline-flex';
                     document.getElementById('loader-msg').innerText = "Wähle deine medStudy.db Datei.";
@@ -1453,6 +1470,53 @@
                 reader.readAsArrayBuffer(file);
             } catch (err) {
                 alert("Fehler: " + err.message);
+            }
+        }
+
+        async function loadDbFromLocalServer(type = 'main') {
+            try {
+                document.getElementById('loader').style.display = 'flex';
+                document.getElementById('loader').style.opacity = '1';
+                document.getElementById('loader-spinner').style.display = 'block';
+                document.getElementById('db-pick-label').style.display = 'none';
+                const srvBtn = document.getElementById('db-server-load-btn');
+                if (srvBtn) srvBtn.style.display = 'none';
+                const staticPick = document.getElementById('db-static-pick-label');
+                if (staticPick) staticPick.style.display = 'none';
+                document.getElementById('loader-msg').innerText = `Lade ${type === 'static' ? 'statische ' : ''}Datenbank direkt vom PC...`;
+
+                const res = await fetch(`/api/settings/download-db?type=${type}`);
+                if (!res.ok) throw new Error("Server antwortete mit Status " + res.status);
+                const buf = await res.arrayBuffer();
+                const SQL = await sqlPromise;
+
+                if (type === 'static') {
+                    await saveToIndexedDB(buf, IDB_KEY_STATIC);
+                    staticDb = new SQL.Database(new Uint8Array(buf));
+                    if (db) {
+                        renderUnitsList();
+                        renderCardsList();
+                        await renderSyncView();
+                    }
+                    document.getElementById('loader').style.opacity = '0';
+                    setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 250);
+                    showToast("Statische DB erfolgreich vom PC geladen!");
+                } else {
+                    db = new SQL.Database(new Uint8Array(buf));
+                    await saveToIndexedDB(buf, IDB_KEY_MAIN);
+                    await initStaticDbIfAvailable(SQL);
+                    initAppViews();
+                    showToast("Hauptdatenbank erfolgreich vom PC geladen!");
+                }
+            } catch (e) {
+                alert("Fehler beim Laden vom PC: " + e.message + "\n\nStelle sicher, dass der PC läuft und du im selben WLAN bist.");
+                document.getElementById('loader-spinner').style.display = 'none';
+                document.getElementById('db-pick-label').style.display = 'inline-flex';
+                const srvBtn = document.getElementById('db-server-load-btn');
+                if (srvBtn) srvBtn.style.display = 'inline-flex';
+                const staticPick = document.getElementById('db-static-pick-label');
+                if (staticPick) staticPick.style.display = 'inline-flex';
+                document.getElementById('loader-msg').innerText = "Wähle deine medStudy.db aus oder lade aus dem Cache.";
             }
         }
 
