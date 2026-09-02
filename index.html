@@ -821,16 +821,16 @@
         </p>
         
         <div style="display:flex; flex-direction:column; gap:10px; width:100%; max-width:320px; margin-bottom:14px;">
-            <label for="db-file-input" class="upload-btn" id="db-pick-label" style="display:inline-flex; align-items:center; justify-content:center; gap:8px;">
+            <button type="button" class="upload-btn" id="db-pick-label" onclick="pickFile('db-file-input')" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; border:none; width:100%; cursor:pointer;">
                 <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
                 <span>📘 Haupt-DB (medStudy.db) wählen</span>
-            </label>
-            <label for="db-static-file-input" class="btn-action-secondary" id="db-static-pick-label" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; text-align:center; padding:10px; font-size:0.85rem;">
+            </button>
+            <button type="button" class="btn-action-secondary" id="db-static-pick-label" onclick="pickFile('db-static-file-input')" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; text-align:center; padding:10px; font-size:0.85rem; width:100%;">
                 <span>📦 Statik-DB (medStudy_static.db) importieren</span>
-            </label>
+            </button>
         </div>
-        <input type="file" id="db-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/x-sqlite3,application/vnd.sqlite3,*/*">
-        <input type="file" id="db-static-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/x-sqlite3,application/vnd.sqlite3,*/*">
+        <input type="file" id="db-file-input" style="display:none;">
+        <input type="file" id="db-static-file-input" style="display:none;">
 
         <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.4; max-width:320px; background:rgba(0,0,0,0.25); padding:10px; border-radius:var(--radius-sm); border:1px solid var(--border);">
             💡 <strong>Automatische Erkennung:</strong><br>
@@ -1025,9 +1025,9 @@
                     <button class="btn-action-primary" onclick="saveDatabaseToFile()">
                         💾 medStudy.db herunterladen
                     </button>
-                    <label for="db-file-input" class="btn-action-secondary" style="text-align: center; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
+                    <button type="button" class="btn-action-secondary" onclick="pickFile('db-file-input')" style="text-align: center; display: inline-flex; align-items: center; justify-content: center; cursor: pointer;">
                         🔄 Neu laden
-                    </label>
+                    </button>
                 </div>
             </div>
 
@@ -1046,9 +1046,9 @@
                     Status wird ermittelt...
                 </div>
 
-                <label for="db-static-file-input" class="btn-action-secondary" style="display: block; text-align: center; cursor: pointer; border-color: var(--accent-teal); color: #5eead4;">
+                <button type="button" class="btn-action-secondary" onclick="pickFile('db-static-file-input')" style="display: block; width: 100%; text-align: center; cursor: pointer; border-color: var(--accent-teal); color: #5eead4; background: rgba(94,234,212,0.06);">
                     📦 medStudy_static.db importieren / aktualisieren
-                </label>
+                </button>
             </div>
 
             <!-- Anki Queue Card -->
@@ -1101,10 +1101,10 @@
                     Wähle die zweite DB-Datei aus – der Merge übernimmt alle Fortschritte, Altfragen-Kopplungen und Sessions nach dem <em>Last-Write-Wins</em>-Prinzip.
                 </p>
 
-                <label for="merge-file-input" class="btn-action-secondary" style="display: block; text-align: center; cursor: pointer; border-color: var(--primary); color: #93c5fd;">
+                <button type="button" class="btn-action-secondary" onclick="pickFile('merge-file-input')" style="display: block; width: 100%; text-align: center; cursor: pointer; border-color: var(--primary); color: #93c5fd; background: rgba(59,130,246,0.06);">
                     ✨ Zweite DB auswählen & zusammenführen
-                </label>
-                <input type="file" id="merge-file-input" style="opacity:0;position:absolute;z-index:-1;width:1px;height:1px" accept=".db,.sqlite,.sqlite3,application/octet-stream,application/x-sqlite3,application/vnd.sqlite3,*/*">
+                </button>
+                <input type="file" id="merge-file-input" style="display:none;">
 
                 <div id="merge-result-box" style="display: none; margin-top: 12px; padding: 12px; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: var(--radius-md); font-size: 0.84rem; color: #a7f3d0;"></div>
             </div>
@@ -1452,16 +1452,38 @@
             }
         }
 
+        function pickFile(inputId) {
+            const input = document.getElementById(inputId);
+            if (input) {
+                input.value = null; // Setze den Wert zurück, damit auch dieselbe Datei erneut ausgewählt werden kann
+                input.click();
+            }
+        }
+
         document.getElementById('db-file-input').addEventListener('change', (e) => {
-            handleUploadedDbFile(e.target.files[0], false);
+            if (e.target.files && e.target.files.length > 0) {
+                handleUploadedDbFile(e.target.files[0], false);
+            }
         });
 
         const staticFileInput = document.getElementById('db-static-file-input');
         if (staticFileInput) {
             staticFileInput.addEventListener('change', (e) => {
-                handleUploadedDbFile(e.target.files[0], true);
+                if (e.target.files && e.target.files.length > 0) {
+                    handleUploadedDbFile(e.target.files[0], true);
+                }
             });
         }
+
+        // Drag & Drop Unterstützung (iPad Split View & Desktop)
+        window.addEventListener('dragover', (e) => { e.preventDefault(); e.stopPropagation(); });
+        window.addEventListener('drop', (e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+                handleUploadedDbFile(e.dataTransfer.files[0]);
+            }
+        });
 
         function initAppViews() {
             if (db) {
@@ -1928,9 +1950,9 @@
                     <div style="padding:14px; text-align:center; background:rgba(255,255,255,0.03); border:1px dashed var(--border); border-radius:var(--radius-sm); margin:10px 0;">
                         <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:6px;">📦 <strong>Statische Datenbank nicht geladen</strong></p>
                         <p style="color:var(--text-muted); font-size:0.78rem; margin-bottom:10px;">Folientexte befinden sich in der <code>medStudy_static.db</code> (~170 MB).</p>
-                        <label for="db-static-file-input" class="btn-action-secondary" style="font-size:0.8rem; padding:6px 12px; cursor:pointer; display:inline-block;">
+                        <button type="button" class="btn-action-secondary" onclick="pickFile('db-static-file-input')" style="font-size:0.8rem; padding:6px 12px; cursor:pointer; display:inline-block;">
                             📦 medStudy_static.db importieren
-                        </label>
+                        </button>
                     </div>
                 `;
                 return;
@@ -2002,9 +2024,9 @@
                     <div style="padding:14px; text-align:center; background:rgba(255,255,255,0.03); border:1px dashed var(--border); border-radius:var(--radius-sm); margin:10px 0;">
                         <p style="color:var(--text-secondary); font-size:0.85rem; margin-bottom:6px;">📦 <strong>Statische Datenbank nicht geladen</strong></p>
                         <p style="color:var(--text-muted); font-size:0.78rem; margin-bottom:10px;">Altfragen befinden sich in der <code>medStudy_static.db</code> (~170 MB).</p>
-                        <label for="db-static-file-input" class="btn-action-secondary" style="font-size:0.8rem; padding:6px 12px; cursor:pointer; display:inline-block;">
+                        <button type="button" class="btn-action-secondary" onclick="pickFile('db-static-file-input')" style="font-size:0.8rem; padding:6px 12px; cursor:pointer; display:inline-block;">
                             📦 medStudy_static.db importieren
-                        </label>
+                        </button>
                     </div>
                 `;
                 return;
@@ -2334,9 +2356,9 @@
                         <p style="font-size:0.84rem; color:var(--text-secondary); line-height:1.45; max-width:320px; margin:0 auto 16px auto;">
                             Die Altfragen und Folientexte (~170 MB) sind in der statischen Datenbank ausgelagert. Importiere sie <strong>einmalig</strong> im Browser, um alle Altfragen mobil nutzen zu können!
                         </p>
-                        <label for="db-static-file-input" class="btn-action-primary" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding:10px 18px; font-size:0.88rem;">
+                        <button type="button" class="btn-action-primary" onclick="pickFile('db-static-file-input')" style="display:inline-flex; align-items:center; justify-content:center; gap:8px; cursor:pointer; padding:10px 18px; font-size:0.88rem; border:none;">
                             <span>📦 medStudy_static.db importieren (1x)</span>
-                        </label>
+                        </button>
                     </div>
                 `;
                 return;
