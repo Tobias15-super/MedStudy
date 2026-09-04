@@ -501,6 +501,41 @@
             color: #f87171;
             border: 1px solid rgba(239, 68, 68, 0.3);
         }
+        .badge-purple {
+            background: rgba(168, 85, 247, 0.15);
+            color: #c084fc;
+            border: 1px solid rgba(168, 85, 247, 0.35);
+        }
+        .badge-blue {
+            background: rgba(59, 130, 246, 0.15);
+            color: #60a5fa;
+            border: 1px solid rgba(59, 130, 246, 0.35);
+        }
+        .badge-amber {
+            background: rgba(245, 158, 11, 0.15);
+            color: #fbbf24;
+            border: 1px solid rgba(245, 158, 11, 0.35);
+        }
+        .badge-teal {
+            background: rgba(20, 184, 166, 0.15);
+            color: #2dd4bf;
+            border: 1px solid rgba(20, 184, 166, 0.35);
+        }
+        .badge-red {
+            background: rgba(239, 68, 68, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(239, 68, 68, 0.35);
+        }
+        .badge-green {
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.35);
+        }
+        .badge-gray {
+            background: rgba(255, 255, 255, 0.07);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
 
         /* ─── Modal / Bottom Sheet ─────────────────────────────────── */
         .modal {
@@ -640,6 +675,118 @@
         .fact-card.f-therapie { border-left-color: var(--accent-teal); }
         .fact-card.f-medikament { border-left-color: var(--accent-cyan); }
         .fact-card.f-notfall { border-left-color: var(--accent-red); }
+
+        .anki-card {
+            background: rgba(17, 24, 39, 0.6);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 12px 14px;
+            margin-bottom: 12px;
+            transition: all 0.15s ease;
+        }
+        .anki-card.candidate-card {
+            opacity: 0.9;
+            border-left: 3px solid var(--accent-amber);
+        }
+        .anki-card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 10px;
+            margin-bottom: 6px;
+        }
+        .anki-question {
+            font-size: 0.9rem;
+            font-weight: 500;
+            line-height: 1.45;
+            color: var(--text-main);
+            flex: 1;
+        }
+        .anki-question img, .anki-answer img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+            margin: 6px 0;
+            display: block;
+        }
+        .anki-card-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+        .anki-card-meta {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            gap: 6px;
+            margin-top: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .anki-answer {
+            display: none;
+            margin-top: 10px;
+            padding: 12px 14px;
+            background: rgba(0, 0, 0, 0.35);
+            border: 1px solid rgba(20, 184, 166, 0.3);
+            border-left: 3px solid var(--accent-teal);
+            border-radius: var(--radius-sm);
+            font-size: 0.88rem;
+            line-height: 1.5;
+            color: var(--text-main);
+        }
+        .anki-answer.visible {
+            display: block;
+        }
+        .btn-toggle-answer {
+            background: transparent;
+            border: 1px solid var(--border);
+            color: var(--text-secondary);
+            font-size: 0.78rem;
+            padding: 4px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            margin-top: 6px;
+            transition: all 0.15s ease;
+        }
+        .btn-toggle-answer:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: var(--text-main);
+        }
+        .btn-bookmark {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 3px 7px;
+            font-size: 0.82rem;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn-bookmark.active {
+            background: rgba(245, 158, 11, 0.2);
+            border-color: rgba(245, 158, 11, 0.4);
+            color: #fbbf24;
+        }
+        .section-divider {
+            margin: 1.75rem 0 1rem 0;
+            border-top: 1px dashed var(--border);
+            position: relative;
+            text-align: center;
+        }
+        .section-divider-title {
+            position: relative;
+            top: -10px;
+            background: var(--bg-card);
+            padding: 0 12px;
+            font-weight: 600;
+            font-size: 0.78rem;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
 
         .card-accordion {
             background: rgba(10, 14, 26, 0.45);
@@ -1155,6 +1302,8 @@
                 <button class="modal-close-btn" onclick="closeUnitModal()">&times;</button>
             </div>
 
+            <div id="m-unit-completion-banner" style="display:none; margin: 0 16px 12px 16px; padding: 12px 14px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.35); border-radius: var(--radius-md); font-size: 0.88rem; color: #34d399; line-height: 1.45;"></div>
+
             <div class="modal-tabs">
                 <button class="modal-tab-btn active" onclick="switchModalTab('tab-unit-info')">Info</button>
                 <button class="modal-tab-btn" onclick="switchModalTab('tab-unit-facts')">Facts (<span id="m-count-facts">0</span>)</button>
@@ -1168,6 +1317,7 @@
                 
                 <!-- Tab: Info -->
                 <div class="modal-tab-pane active" id="tab-unit-info">
+                    <div id="m-unit-duration-info" style="margin-bottom: 12px; font-size: 0.86rem; background: rgba(255,255,255,0.03); border: 1px solid var(--border); padding: 8px 12px; border-radius: 8px;"></div>
                     <h4 style="font-size: 0.88rem; font-weight: 700; margin-bottom: 6px;">🎯 Lernziele</h4>
                     <ul id="m-unit-objectives" style="padding-left: 18px; font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4; margin-bottom: 14px;"></ul>
 
@@ -1225,7 +1375,7 @@
                     Wie viele Minuten hast du für diese Einheit gelernt?
                 </p>
 
-                <div style="display: flex; gap: 8px; margin-bottom: 14px;">
+                <div id="completion-time-pills" style="display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;">
                     <button class="filter-pill" onclick="setCompletionMinutes(15)">15m</button>
                     <button class="filter-pill" onclick="setCompletionMinutes(30)">30m</button>
                     <button class="filter-pill active" onclick="setCompletionMinutes(45)">45m</button>
@@ -1246,6 +1396,22 @@
                 <button class="btn-action-primary" onclick="confirmCompleteUnit()">
                     🏁 Jetzt abschließen
                 </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ─── Cross-Lecture Card Matches Detail Modal ───────────────── -->
+    <div class="modal" id="card-matches-modal" style="z-index: 2500;">
+        <div class="modal-content" style="max-width: 560px; max-height: 85vh; display: flex; flex-direction: column;">
+            <div class="modal-header">
+                <div class="modal-title" id="card-matches-modal-title">🔗 Vorlesungs-Zuordnungen</div>
+                <button class="modal-close-btn" onclick="closeMobileCardMatchesModal()">&times;</button>
+            </div>
+            <div class="modal-body" id="card-matches-modal-body" style="overflow-y: auto; flex: 1;">
+                <!-- Dynamischer Inhalt -->
+            </div>
+            <div class="modal-footer">
+                <button class="btn-action-secondary" onclick="closeMobileCardMatchesModal()" style="width: 100%;">Schließen</button>
             </div>
         </div>
     </div>
@@ -1384,6 +1550,55 @@
             isDirty = false;
             document.getElementById('dirty-indicator').classList.remove('active');
             document.getElementById('nav-dirty-badge').style.display = 'none';
+        }
+
+        // ─── Ridge-Regression & Exakte Zeitschätzungen ──────────────
+        let schedulerWeights = null;
+        function refreshSchedulerWeights() {
+            try {
+                if (!db) return;
+                const row = queryDB("SELECT value FROM settings WHERE key = 'scheduler_duration_weights'")[0];
+                if (row && row.value) {
+                    schedulerWeights = JSON.parse(row.value);
+                }
+            } catch(e) {
+                console.warn("[Mobile] Scheduler Weights Fehler:", e);
+            }
+        }
+
+        function getUnitExactDuration(u) {
+            if (!u) return 40;
+            // 1. Reale Lernzeit bevorzugen
+            if (u.actual_avg_duration_minutes && u.actual_avg_duration_minutes > 0) {
+                return Math.round(u.actual_avg_duration_minutes);
+            }
+            // 2. Ridge-Regressionsmodell berechnen (falls Gewichte und Feature-Counts vorhanden)
+            if (schedulerWeights && (u.total_pages || u.card_count || u.fact_count)) {
+                const pages = Number(u.total_pages || 0);
+                const chars_k = Number(u.text_length || 0) / 1000.0;
+                const cards = Number(u.card_count || 0);
+                const facts = Number(u.fact_count || 0);
+                const est = (schedulerWeights.w0 || 10) +
+                            (schedulerWeights.w1 || 2) * pages +
+                            (schedulerWeights.w2 || 1.5) * chars_k +
+                            (schedulerWeights.w3 || 1.5) * cards +
+                            (schedulerWeights.w4 || 2) * facts;
+                return Math.max(15, Math.round(est));
+            }
+            // 3. Persistierte Schätzung aus der Datenbank (bereits im Backend synchronisiert)
+            if (u.estimated_duration_minutes && u.estimated_duration_minutes > 0) {
+                return Math.round(u.estimated_duration_minutes);
+            }
+            return 40;
+        }
+
+        function formatExactDuration(mins) {
+            if (!mins) return '—';
+            const mTotal = Math.round(mins);
+            if (mTotal < 60) return `${mTotal} min`;
+            const h = Math.floor(mTotal / 60);
+            const m = mTotal % 60;
+            return m > 0 ? `${mTotal} min (${h}h ${m}m)` : `${mTotal} min (${h}h)`;
         }
 
         // ─── App Startup ────────────────────────────────────────────
@@ -1568,6 +1783,7 @@
             setTimeout(() => {
                 document.getElementById('loader').style.display = 'none';
                 document.getElementById('header-save-btn').disabled = false;
+                refreshSchedulerWeights();
                 buildBlockFilterPills();
                 renderDashboard();
                 renderUnitsList();
@@ -1709,6 +1925,7 @@
             // Overdue Units Check
             const overdue = queryDB(`
                 SELECT lu.*, b.name as block_name,
+                    (SELECT COALESCE(SUM(l.page_count), 0) FROM unit_lectures ul JOIN lectures l ON ul.lecture_id = l.id WHERE ul.unit_id = lu.id) as total_pages,
                     (SELECT COUNT(*) FROM clinical_facts WHERE unit_id = lu.id) as fact_count,
                     (SELECT COUNT(DISTINCT cpm.card_id) FROM unit_lectures ul JOIN card_page_matches cpm ON ul.lecture_id = cpm.lecture_id WHERE ul.unit_id = lu.id AND ((cpm.confidence_score >= 0.55 AND cpm.is_manual != -1) OR cpm.is_manual = 1)) as card_count,
                     (SELECT COUNT(*) FROM pending_anki_sync WHERE unit_id = lu.id) as in_anki_queue
@@ -1736,7 +1953,11 @@
 
             // Today's Units
             const todayUnits = queryDB(`
-                SELECT lu.*, b.name as block_name
+                SELECT lu.*, b.name as block_name,
+                    (SELECT COALESCE(SUM(l.page_count), 0) FROM unit_lectures ul JOIN lectures l ON ul.lecture_id = l.id WHERE ul.unit_id = lu.id) as total_pages,
+                    (SELECT COUNT(*) FROM clinical_facts WHERE unit_id = lu.id) as fact_count,
+                    (SELECT COUNT(DISTINCT cpm.card_id) FROM unit_lectures ul JOIN card_page_matches cpm ON ul.lecture_id = cpm.lecture_id WHERE ul.unit_id = lu.id AND ((cpm.confidence_score >= 0.55 AND cpm.is_manual != -1) OR cpm.is_manual = 1)) as card_count,
+                    (SELECT COUNT(*) FROM pending_anki_sync WHERE unit_id = lu.id) as in_anki_queue
                 FROM learning_units lu
                 LEFT JOIN blocks b ON lu.block_id = b.id
                 WHERE lu.scheduled_date = ?
@@ -1840,6 +2061,7 @@
 
             let sql = `
                 SELECT lu.*, b.name as block_name,
+                    (SELECT COALESCE(SUM(l.page_count), 0) FROM unit_lectures ul JOIN lectures l ON ul.lecture_id = l.id WHERE ul.unit_id = lu.id) as total_pages,
                     (SELECT COUNT(*) FROM clinical_facts WHERE unit_id = lu.id) as fact_count,
                     (SELECT COUNT(DISTINCT cpm.card_id) FROM unit_lectures ul JOIN card_page_matches cpm ON ul.lecture_id = cpm.lecture_id WHERE ul.unit_id = lu.id AND ((cpm.confidence_score >= 0.55 AND cpm.is_manual != -1) OR cpm.is_manual = 1)) as card_count,
                     (SELECT COUNT(*) FROM pending_anki_sync WHERE unit_id = lu.id) as in_anki_queue
@@ -1904,7 +2126,8 @@
                 overdueBadge = `<span class="badge badge-overdue">Überfällig</span>`;
             }
 
-            const dur = u.actual_avg_duration_minutes ? Math.round(u.actual_avg_duration_minutes) : (u.estimated_duration_minutes || 45);
+            const dur = getUnitExactDuration(u);
+            const durLabel = formatExactDuration(dur);
 
             div.innerHTML = `
                 <div class="unit-top-row">
@@ -1917,7 +2140,7 @@
                 </div>
                 <div class="unit-meta">
                     <span>📁 ${escapeHTML(u.block_name ? u.block_name.split('-')[0].trim() : '')}</span>
-                    <span>⏱️ ~${dur} min</span>
+                    <span>⏱️ ${durLabel}</span>
                     <span>🔗 ${u.card_count || 0} Altfragen</span>
                     <span>💡 ${u.fact_count || 0} Facts</span>
                     ${u.scheduled_date ? `<span>📅 ${u.scheduled_date}</span>` : ''}
@@ -1929,10 +2152,31 @@
         // ─── Unit Detail Bottom Sheet ───────────────────────────────
         function openUnitModal(unitId) {
             activeUnitId = unitId;
-            const u = queryDB("SELECT lu.*, b.name as block_name FROM learning_units lu LEFT JOIN blocks b ON lu.block_id = b.id WHERE lu.id = ?", [unitId])[0];
+            const u = queryDB(`
+                SELECT lu.*, b.name as block_name,
+                    (SELECT COALESCE(SUM(l.page_count), 0) FROM unit_lectures ul JOIN lectures l ON ul.lecture_id = l.id WHERE ul.unit_id = lu.id) as total_pages,
+                    (SELECT COUNT(*) FROM clinical_facts WHERE unit_id = lu.id) as fact_count,
+                    (SELECT COUNT(DISTINCT cpm.card_id) FROM unit_lectures ul JOIN card_page_matches cpm ON ul.lecture_id = cpm.lecture_id WHERE ul.unit_id = lu.id AND ((cpm.confidence_score >= 0.55 AND cpm.is_manual != -1) OR cpm.is_manual = 1)) as card_count
+                FROM learning_units lu
+                LEFT JOIN blocks b ON lu.block_id = b.id
+                WHERE lu.id = ?
+            `, [unitId])[0];
             if (!u) return;
 
             document.getElementById('m-unit-title').innerText = u.title;
+
+            // Completion Banner zurücksetzen
+            const compBanner = document.getElementById('m-unit-completion-banner');
+            if (compBanner) compBanner.style.display = 'none';
+
+            // Geschätzte Lernzeit anzeigen (exakte Minuten)
+            const dur = getUnitExactDuration(u);
+            const durLabel = formatExactDuration(dur);
+            const durInfo = document.getElementById('m-unit-duration-info');
+            if (durInfo) {
+                const source = u.actual_avg_duration_minutes ? "aus deinen Daten" : "Regressions-Schätzung";
+                durInfo.innerHTML = `⏱️ Geschätzte Lernzeit: <strong>${durLabel}</strong> <span style="color:var(--text-muted);font-size:0.75rem;">(${source})</span>`;
+            }
 
             // Learning Objectives
             const objList = document.getElementById('m-unit-objectives');
@@ -1996,6 +2240,8 @@
 
         function closeUnitModal() {
             document.getElementById('unit-modal').classList.remove('active');
+            const compBanner = document.getElementById('m-unit-completion-banner');
+            if (compBanner) compBanner.style.display = 'none';
             activeUnitId = null;
         }
 
@@ -2082,6 +2328,52 @@
             });
         }
 
+        function cleanCardText(html) {
+            if (!html) return '';
+            return String(html)
+                .replace(/<style[\s\S]*?<\/style>/gi, '')
+                .replace(/<script[\s\S]*?<\/script>/gi, '')
+                .replace(/<img[^>]*>/gi, ' 🖼️ [Bild] ')
+                .replace(/<br\s*[\/]?>/gi, '\n')
+                .replace(/<\/p>/gi, '\n')
+                .replace(/<\/div>/gi, '\n')
+                .replace(/<[^>]*>/g, '')
+                .replace(/&nbsp;/g, ' ')
+                .replace(/&amp;/g, '&')
+                .replace(/&lt;/g, '<')
+                .replace(/&gt;/g, '>')
+                .replace(/&quot;/g, '"')
+                .replace(/&#39;/g, "'")
+                .trim();
+        }
+
+        function renderMobileTrendBadge(trend, lastYear, count) {
+            if (!trend || trend === 'unknown') return '';
+            const icons = { rising: '📈', stable: '➡️', declining: '📉' };
+            const classes = { rising: 'badge-amber', stable: 'badge-gray', declining: 'badge-gray' };
+            const texts = {
+                rising: 'Steigend',
+                stable: 'Stabil',
+                declining: 'Seltener',
+            };
+            return `<span class="badge ${classes[trend] || 'badge-gray'}">${icons[trend] || ''} ${texts[trend] || trend}${lastYear ? ` (${lastYear})` : ''}</span>`;
+        }
+
+        function renderMobileFrequencyBadge(count, lastYear) {
+            if (!count || count === 0) return '';
+            const currentYear = new Date().getFullYear();
+            const isRecent = lastYear && (currentYear - lastYear) <= 3;
+
+            if (count >= 5 && isRecent) {
+                return `<span class="badge badge-red">🔥 ${count}× in Prüfungen</span>`;
+            } else if (count >= 3) {
+                return `<span class="badge badge-amber">📋 ${count}× in Prüfungen</span>`;
+            } else if (lastYear && (currentYear - lastYear) > 8) {
+                return `<span class="badge badge-gray">❄️ Zuletzt ${lastYear}</span>`;
+            }
+            return `<span class="badge badge-blue">${count}× in Prüfungen</span>`;
+        }
+
         function renderUnitAltfragen(unitId) {
             const container = document.getElementById('m-unit-cards-list');
             container.innerHTML = "";
@@ -2106,72 +2398,426 @@
                 JOIN unit_lectures ul ON cpm.lecture_id = ul.lecture_id
                 JOIN lectures l ON cpm.lecture_id = l.id
                 WHERE ul.unit_id = ?
-                ORDER BY cpm.confidence_score DESC
+                ORDER BY cpm.is_manual DESC, cpm.confidence_score DESC, cpm.page_number ASC
             `, [unitId]);
 
             const cardIds = [...new Set(matches.map(m => m.card_id))];
-            const cardMap = {};
-            if (cardIds.length > 0) {
-                const placeholders = cardIds.map(() => '?').join(',');
-                const cardRows = queryStaticDB(`
-                    SELECT id, question, answer, appearance_count, frequency_trend
-                    FROM anki_cards
-                    WHERE id IN (${placeholders})
-                `, cardIds);
-                cardRows.forEach(c => cardMap[c.id] = c);
-            }
-
-            const cards = matches.map(m => {
-                const c = cardMap[m.card_id] || {};
-                return {
-                    ...c,
-                    ...m
-                };
-            }).filter(c => c.question);
-
-            document.getElementById('m-count-cards').innerText = cards.length;
-
-            if (cards.length === 0) {
-                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:10px 0;">Keine Altfragen zu dieser Einheit gematcht.</p>`;
+            if (cardIds.length === 0) {
+                document.getElementById('m-count-cards').innerText = "0";
+                container.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem; padding:14px 0; text-align:center;">Keine Altfragen zu dieser Einheit zugeordnet.</p>`;
                 return;
             }
 
-            cards.forEach(c => {
-                const isCoupled = (c.is_manual === 1) || (c.is_manual !== -1 && c.confidence_score >= 0.55);
-                const acc = document.createElement('div');
-                acc.className = 'card-accordion';
-                
-                acc.innerHTML = `
-                    <div class="card-acc-header" onclick="toggleAccBody(this)">
-                        <div style="flex:1; padding-right:6px;">
-                            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">#${c.card_id || c.id}</span>
-                            <div style="font-size:0.88rem; font-weight:500; margin-top:2px;">${escapeHTML((c.question || '').replace(/<[^>]*>/g,'').substring(0, 80))}...</div>
-                        </div>
-                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-                            <span class="badge ${isCoupled ? 'badge-completed' : 'badge-pending'}">${Math.round((c.confidence_score || 0) * 100)}%</span>
-                        </div>
-                    </div>
-                    <div class="card-acc-body">
-                        <div style="font-weight:600; color:var(--primary); margin-bottom:4px;">Frage:</div>
-                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:10px; white-space:pre-wrap;">${escapeHTML(c.question.replace(/<[^>]*>/g,''))}</div>
-                        <div style="font-weight:600; color:var(--accent-teal); margin-bottom:4px;">Antwort:</div>
-                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:12px; white-space:pre-wrap;">${escapeHTML(c.answer.replace(/<[^>]*>/g,''))}</div>
-                        
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px;">
-                            <span class="source-badge">📄 Folie ${c.page_number}</span>
-                            <button class="btn-couple ${isCoupled ? 'btn-couple-off' : 'btn-couple-on'}" onclick="toggleCardCoupling(${c.id}, ${c.lecture_id}, ${isCoupled ? -1 : 1})">
-                                ${isCoupled ? '❌ Entkoppeln' : '🔗 Koppeln'}
-                            </button>
-                        </div>
-                    </div>
-                `;
-                container.appendChild(acc);
+            const idListStr = cardIds.join(',');
+            const crossCountsRows = queryDB(`
+                SELECT card_id, COUNT(DISTINCT lecture_id) as lecture_count
+                FROM card_page_matches
+                WHERE card_id IN (${idListStr})
+                  AND ((confidence_score >= 0.40 AND (is_manual IS NULL OR is_manual != -1)) OR is_manual = 1)
+                GROUP BY card_id
+            `);
+            const crossCountsMap = {};
+            crossCountsRows.forEach(r => crossCountsMap[r.card_id] = r.lecture_count);
+
+            const bookmarkRows = queryDB(`
+                SELECT item_id FROM bookmarks WHERE item_type = 'anki_card' AND item_id IN (${idListStr})
+            `);
+            const bookmarkedSet = new Set(bookmarkRows.map(r => r.item_id));
+
+            const placeholders = cardIds.map(() => '?').join(',');
+            const cardRows = queryStaticDB(`
+                SELECT id, question, answer, question_raw, answer_raw, tags, year_tags, appearance_count, frequency_trend, last_year
+                FROM anki_cards
+                WHERE id IN (${placeholders})
+            `, cardIds);
+            const cardMap = {};
+            cardRows.forEach(c => {
+                let tags = [];
+                let yearTags = [];
+                try { tags = JSON.parse(c.tags || '[]'); } catch(e) {}
+                try { yearTags = JSON.parse(c.year_tags || '[]'); } catch(e) {}
+                cardMap[c.id] = {
+                    ...c,
+                    tags,
+                    year_tags: yearTags
+                };
             });
+
+            const cardMatchesMap = {};
+            matches.forEach(m => {
+                if (!cardMatchesMap[m.card_id]) {
+                    cardMatchesMap[m.card_id] = {
+                        card_id: m.card_id,
+                        max_confidence: m.confidence_score || 0,
+                        is_manual: m.is_manual || 0,
+                        page_matches: []
+                    };
+                }
+                if ((m.confidence_score || 0) > cardMatchesMap[m.card_id].max_confidence) {
+                    cardMatchesMap[m.card_id].max_confidence = m.confidence_score;
+                }
+                if (m.is_manual === 1) cardMatchesMap[m.card_id].is_manual = 1;
+                if (m.is_manual === -1 && cardMatchesMap[m.card_id].is_manual === 0) cardMatchesMap[m.card_id].is_manual = -1;
+
+                if (m.page_number && !cardMatchesMap[m.card_id].page_matches.some(p => p.page_number === m.page_number && p.lecture_id === m.lecture_id)) {
+                    cardMatchesMap[m.card_id].page_matches.push({
+                        page_number: m.page_number,
+                        confidence_score: m.confidence_score,
+                        lecture_id: m.lecture_id,
+                        lecture_filename: m.lecture_filename
+                    });
+                }
+            });
+
+            const combinedCards = cardIds.map(id => {
+                const staticData = cardMap[id] || {};
+                const matchData = cardMatchesMap[id] || {};
+                return {
+                    id: id,
+                    ...staticData,
+                    ...matchData,
+                    matched_lecture_count: crossCountsMap[id] || 1,
+                    is_bookmarked: bookmarkedSet.has(id)
+                };
+            }).filter(c => c.question);
+
+            const thresholdPrimary = 0.55;
+            const coupled = [];
+            const candidates = [];
+
+            combinedCards.forEach(c => {
+                const isCoupled = (c.is_manual === 1) || (c.is_manual !== -1 && c.max_confidence >= thresholdPrimary);
+                if (isCoupled) {
+                    coupled.push(c);
+                } else {
+                    candidates.push(c);
+                }
+            });
+
+            document.getElementById('m-count-cards').innerText = coupled.length;
+
+            let html = `
+                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px; font-size:0.8rem; color:var(--text-muted);">
+                    <span><strong>${coupled.length} gekoppelt</strong> &middot; ${candidates.length} Kandidaten</span>
+                    <span style="font-size:0.75rem;">Schwelle: 55%</span>
+                </div>
+            `;
+
+            if (coupled.length === 0 && candidates.length === 0) {
+                html += `<p style="color:var(--text-muted); font-size:0.85rem; padding:14px 0; text-align:center;">Keine Altfragen zu dieser Einheit gefunden.</p>`;
+            } else {
+                if (coupled.length > 0) {
+                    html += `<div class="coupled-section">`;
+                    coupled.forEach(c => {
+                        html += renderMobileAnkiCard(c, unitId);
+                    });
+                    html += `</div>`;
+                } else {
+                    html += `<p style="color:var(--text-muted); font-size:0.82rem; padding:12px; border:1px dashed var(--border); border-radius:8px; text-align:center; margin-bottom:12px;">Keine gekoppelten Altfragen in dieser Einheit.</p>`;
+                }
+
+                if (candidates.length > 0) {
+                    html += `
+                        <div class="section-divider">
+                            <span>💡 Mögliche Kandidaten (${candidates.length})</span>
+                        </div>
+                        <div class="candidates-section">
+                    `;
+                    candidates.forEach(c => {
+                        html += renderMobileAnkiCard(c, unitId);
+                    });
+                    html += `</div>`;
+                }
+            }
+
+            container.innerHTML = html;
+        }
+
+        function renderMobileAnkiCard(card, currentUnitId) {
+            const isCoupled = (card.is_manual === 1) || (card.is_manual !== -1 && (card.max_confidence !== undefined ? card.max_confidence : (card.confidence_score || 0)) >= 0.55);
+            const scoreVal = card.max_confidence !== undefined ? card.max_confidence : (card.confidence_score || 0);
+            const scorePercent = Math.round(scoreVal * 100);
+
+            const blockTag = (card.tags || []).find(t => String(t).toLowerCase().startsWith('block'));
+            const blockTagHtml = blockTag ? `<span class="badge badge-purple">${escapeHTML(String(blockTag))}</span>` : '';
+
+            const freqBadge = renderMobileFrequencyBadge(card.appearance_count, card.last_year);
+            const trendBadge = renderMobileTrendBadge(card.frequency_trend, card.last_year, card.appearance_count);
+
+            const matchCount = card.matched_lecture_count || 1;
+            const matchBadgeHtml = matchCount > 1
+                ? `<button type="button" class="badge badge-purple" style="cursor:pointer; border:1px solid rgba(168,85,247,0.4);" onclick="openMobileCardMatchesModal(${card.id}, ${currentUnitId || 'null'})" title="In mehreren Vorlesungen gematcht">🔗 In ${matchCount} Vorlesungen</button>`
+                : `<button type="button" class="badge badge-gray" style="cursor:pointer;" onclick="openMobileCardMatchesModal(${card.id}, ${currentUnitId || 'null'})" title="Vorlesungs-Zuordnung anzeigen">🔗 ${matchCount} Vorlesung</button>`;
+
+            const yearBadges = (card.year_tags || []).slice(-3).map(y => `<span class="badge badge-gray">${escapeHTML(String(y))}</span>`).join('');
+
+            const qClean = cleanCardText(card.question);
+            const aClean = cleanCardText(card.answer);
+
+            let pagesHtml = '';
+            if (card.page_matches && card.page_matches.length > 0) {
+                pagesHtml = card.page_matches.map(m => `
+                    <span class="source-badge">📄 S. ${m.page_number} (${Math.round((m.confidence_score || 0) * 100)}%)</span>
+                `).join(' ');
+            } else if (card.lecture_name || card.lecture_filename) {
+                const fname = (card.lecture_name || card.lecture_filename || '').replace('.pdf', '');
+                pagesHtml = `<span class="source-badge">📄 S. ${card.page_number || 1} (${escapeHTML(fname)})</span>`;
+            }
+
+            return `
+            <div class="anki-card ${!isCoupled ? 'candidate-card' : ''}" id="m-card-${card.id}">
+                <div class="anki-card-header">
+                    <div class="anki-question">${escapeHTML(qClean)}</div>
+                    <div class="anki-card-actions">
+                        <button class="btn-bookmark ${card.is_bookmarked ? 'active' : ''}" onclick="toggleMobileBookmark(${card.id}, this)" title="Lesezeichen">
+                            ${card.is_bookmarked ? '🔖' : '🏷️'}
+                        </button>
+                        ${currentUnitId ? `
+                        <button class="btn-couple ${isCoupled ? 'btn-couple-off' : 'btn-couple-on'}" onclick="toggleCardCouplingForUnit(${card.id}, ${currentUnitId}, ${isCoupled ? -1 : 1})">
+                            ${isCoupled ? '❌ Entkoppeln' : '➕ Koppeln'}
+                        </button>
+                        ` : (card.lecture_id ? `
+                        <button class="btn-couple ${isCoupled ? 'btn-couple-off' : 'btn-couple-on'}" onclick="toggleCardCoupling(${card.id}, ${card.lecture_id}, ${isCoupled ? -1 : 1})">
+                            ${isCoupled ? '❌ Entkoppeln' : '➕ Koppeln'}
+                        </button>
+                        ` : '')}
+                    </div>
+                </div>
+
+                <div class="anki-card-meta">
+                    <span class="badge badge-blue font-bold">#${card.id}</span>
+                    ${blockTagHtml}
+                    ${freqBadge}
+                    ${trendBadge}
+                    ${matchBadgeHtml}
+                    ${yearBadges}
+                    ${pagesHtml}
+                    <span style="margin-left:auto; font-size:0.75rem; color:var(--text-muted);">${scorePercent}% Match</span>
+                </div>
+
+                <div style="padding:4px 0 2px 0;">
+                    <button class="btn-toggle-answer" id="m-btn-ans-${card.id}" onclick="toggleMobileAnswer(${card.id})">
+                        Antwort anzeigen ▼
+                    </button>
+                </div>
+
+                <div class="anki-answer" id="m-ans-${card.id}">
+                    <div style="font-weight:700; color:var(--accent-teal); font-size:0.8rem; margin-bottom:4px;">Antwort:</div>
+                    <div style="white-space:pre-wrap; line-height:1.45;">${escapeHTML(aClean)}</div>
+                </div>
+            </div>
+            `;
+        }
+
+        function toggleMobileAnswer(cardId) {
+            const ans = document.getElementById(`m-ans-${cardId}`);
+            const btn = document.getElementById(`m-btn-ans-${cardId}`);
+            if (!ans) return;
+            ans.classList.toggle('visible');
+            const isVis = ans.classList.contains('visible');
+            if (btn) {
+                btn.innerHTML = isVis ? 'Antwort einklappen ▲' : 'Antwort anzeigen ▼';
+            }
+        }
+
+        function toggleMobileBookmark(cardId, btn) {
+            const existing = queryDB("SELECT id FROM bookmarks WHERE item_type = 'anki_card' AND item_id = ?", [cardId]);
+            if (existing.length > 0) {
+                execDB("DELETE FROM bookmarks WHERE item_type = 'anki_card' AND item_id = ?", [cardId]);
+                if (btn) {
+                    btn.classList.remove('active');
+                    btn.innerHTML = '🏷️';
+                }
+                showToast("Lesezeichen entfernt.");
+            } else {
+                execDB("INSERT INTO bookmarks (item_type, item_id) VALUES ('anki_card', ?)", [cardId]);
+                if (btn) {
+                    btn.classList.add('active');
+                    btn.innerHTML = '🔖';
+                }
+                showToast("Lesezeichen gesetzt! 🔖");
+            }
+        }
+
+        function toggleCardCouplingForUnit(cardId, unitId, newManualState) {
+            const lecs = queryDB("SELECT lecture_id FROM unit_lectures WHERE unit_id = ?", [unitId]);
+            if (lecs.length === 0) return;
+
+            const conf = newManualState === 1 ? 1.0 : 0.0;
+            lecs.forEach(l => {
+                const existing = queryDB("SELECT id FROM card_page_matches WHERE card_id = ? AND lecture_id = ?", [cardId, l.lecture_id]);
+                if (existing.length > 0) {
+                    execDB(`
+                        UPDATE card_page_matches
+                        SET is_manual = ?, confidence_score = ?
+                        WHERE card_id = ? AND lecture_id = ?
+                    `, [newManualState, conf, cardId, l.lecture_id]);
+                } else {
+                    execDB(`
+                        INSERT INTO card_page_matches (card_id, lecture_id, page_number, confidence_score, is_manual)
+                        VALUES (?, ?, 1, ?, ?)
+                    `, [cardId, l.lecture_id, conf, newManualState]);
+                }
+
+                execDB(`
+                    INSERT INTO matching_feedback_log (card_id, lecture_id, action)
+                    VALUES (?, ?, ?)
+                `, [cardId, l.lecture_id, newManualState === 1 ? 'couple' : 'uncouple']);
+            });
+
+            showToast(newManualState === 1 ? "Altfrage manuell gekoppelt! ✅" : "Altfrage entkoppelt! ❌");
+            renderUnitAltfragen(unitId);
+            renderCardsList();
+        }
+
+        function openMobileCardMatchesModal(cardId, currentUnitId = null) {
+            const modal = document.getElementById('card-matches-modal');
+            const modalBody = document.getElementById('card-matches-modal-body');
+            const titleEl = document.getElementById('card-matches-modal-title');
+            if (!modal || !modalBody) return;
+
+            modal.classList.add('active');
+            modalBody.innerHTML = `<div style="text-align:center; padding:24px; color:var(--text-muted);"><div class="spinner" style="margin:0 auto 10px auto;"></div>Lade Vorlesungs-Zuordnungen...</div>`;
+
+            try {
+                const rows = queryDB(`
+                    SELECT
+                        l.id as lecture_id,
+                        l.filename as lecture_filename,
+                        lu.id as unit_id,
+                        lu.title as unit_title,
+                        b.name as block_name,
+                        cpm.page_number,
+                        cpm.confidence_score,
+                        cpm.is_manual
+                    FROM card_page_matches cpm
+                    JOIN lectures l ON cpm.lecture_id = l.id
+                    LEFT JOIN unit_lectures ul ON l.id = ul.lecture_id
+                    LEFT JOIN learning_units lu ON ul.unit_id = lu.id
+                    LEFT JOIN blocks b ON lu.block_id = b.id
+                    WHERE cpm.card_id = ?
+                      AND ((cpm.confidence_score >= 0.40 AND (cpm.is_manual IS NULL OR cpm.is_manual != -1)) OR cpm.is_manual = 1)
+                    ORDER BY lu.id IS NULL, lu.id, l.id, cpm.confidence_score DESC
+                `, [cardId]);
+
+                let qText = "";
+                if (staticDb) {
+                    const cardRow = queryStaticDB("SELECT question FROM anki_cards WHERE id = ?", [cardId])[0];
+                    if (cardRow) qText = cleanCardText(cardRow.question);
+                }
+
+                const lecsMap = {};
+                rows.forEach(r => {
+                    const key = r.lecture_id;
+                    if (!lecsMap[key]) {
+                        lecsMap[key] = {
+                            lecture_id: r.lecture_id,
+                            lecture_filename: r.lecture_filename,
+                            unit_id: r.unit_id,
+                            unit_title: r.unit_title,
+                            block_name: r.block_name,
+                            max_confidence: r.confidence_score || 0,
+                            is_manual: r.is_manual || 0,
+                            pages: []
+                        };
+                    } else {
+                        if ((r.confidence_score || 0) > lecsMap[key].max_confidence) {
+                            lecsMap[key].max_confidence = r.confidence_score;
+                        }
+                        if (r.is_manual === 1) lecsMap[key].is_manual = 1;
+                    }
+                    if (r.page_number && !lecsMap[key].pages.some(p => p.page_number === r.page_number)) {
+                        lecsMap[key].pages.push({ page_number: r.page_number, confidence_score: r.confidence_score });
+                    }
+                });
+
+                const matches = Object.values(lecsMap);
+                if (titleEl) {
+                    titleEl.innerHTML = `🔗 Vorlesungs-Zuordnungen (${matches.length})`;
+                }
+
+                let html = `
+                    <div style="margin-bottom:12px; padding:10px 12px; background:rgba(255,255,255,0.03); border:1px solid var(--border); border-radius:8px;">
+                        <div style="font-size:0.72rem; color:var(--text-muted); font-weight:700; text-transform:uppercase; margin-bottom:4px;">
+                            📋 Altfrage #${cardId}
+                        </div>
+                        <div style="font-size:0.88rem; font-weight:500; color:var(--text-primary); line-height:1.45;">
+                            ${escapeHTML(qText || `Altfrage ID #${cardId}`)}
+                        </div>
+                    </div>
+
+                    <div style="margin-bottom:10px; font-size:0.82rem; font-weight:600; color:var(--text-muted);">
+                        In folgenden Vorlesungen zugeordnet (${matches.length} Treffer):
+                    </div>
+                    <div style="display:flex; flex-direction:column; gap:10px;">
+                `;
+
+                if (matches.length === 0) {
+                    html += `<p style="color:var(--text-muted); font-size:0.85rem; padding:14px 0; text-align:center;">Keine weiteren Vorlesungen zugeordnet.</p>`;
+                } else {
+                    matches.forEach(m => {
+                        const isCurrent = currentUnitId && Number(m.unit_id) === Number(currentUnitId);
+                        const scorePercent = Math.round((m.max_confidence || 0) * 100);
+                        const blockLabel = m.block_name ? m.block_name.split('-')[0].trim() : '';
+
+                        html += `
+                        <div style="padding:10px 12px; border-radius:8px; background:rgba(255,255,255,0.03); border:1px solid ${isCurrent ? 'var(--primary)' : 'var(--border)'}; display:flex; flex-direction:column; gap:6px;">
+                            <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:8px;">
+                                <div style="flex:1;">
+                                    <div style="display:flex; align-items:center; gap:6px; flex-wrap:wrap; margin-bottom:3px;">
+                                        ${blockLabel ? `<span class="badge badge-purple" style="font-size:0.68rem;">${escapeHTML(blockLabel)}</span>` : ''}
+                                        ${isCurrent ? `<span class="badge badge-green" style="font-size:0.68rem;">📍 Aktuelle Einheit</span>` : ''}
+                                    </div>
+                                    <div style="font-size:0.88rem; font-weight:600; color:var(--text-primary);">
+                                        ${escapeHTML(m.unit_title || 'Keine Lerneinheit')}
+                                    </div>
+                                    <div style="font-size:0.75rem; color:var(--text-muted); margin-top:2px;">
+                                        📄 ${escapeHTML(m.lecture_filename || '')}
+                                    </div>
+                                </div>
+                                <div style="display:flex; flex-direction:column; align-items:flex-end; gap:6px;">
+                                    ${m.is_manual === 1 
+                                        ? `<span class="badge badge-teal" style="font-size:0.7rem;">✅ Manuell</span>`
+                                        : `<span class="badge badge-blue" style="font-size:0.7rem;">${scorePercent}% Match</span>`
+                                    }
+                                    ${(!isCurrent && m.unit_id) ? `
+                                        <button type="button" class="btn-action-secondary" style="padding:3px 8px; font-size:0.75rem; border-radius:6px; color:var(--primary); border-color:var(--primary);"
+                                                onclick="closeMobileCardMatchesModal(); openUnitModal(${m.unit_id})">
+                                            ➡️ Zur Einheit
+                                        </button>
+                                    ` : ''}
+                                </div>
+                            </div>
+
+                            <!-- Seitenreferenzen -->
+                            <div style="display:flex; align-items:center; gap:4px; flex-wrap:wrap; margin-top:2px; padding-top:6px; border-top:1px solid rgba(255,255,255,0.05);">
+                                <span style="font-size:0.72rem; color:var(--text-muted);">PDF-Seiten:</span>
+                                ${m.pages.map(p => `
+                                    <span class="source-badge">Folie ${p.page_number} (${Math.round(p.confidence_score * 100)}%)</span>
+                                `).join(' ')}
+                            </div>
+                        </div>
+                        `;
+                    });
+                }
+
+                html += `</div>`;
+                modalBody.innerHTML = html;
+            } catch(e) {
+                modalBody.innerHTML = `<div style="color:var(--accent-red); padding:10px; font-size:0.85rem;">Fehler: ${escapeHTML(e.message)}</div>`;
+            }
+        }
+
+        function closeMobileCardMatchesModal() {
+            const modal = document.getElementById('card-matches-modal');
+            if (modal) modal.classList.remove('active');
         }
 
         function toggleAccBody(hdr) {
             const body = hdr.nextElementSibling;
-            body.style.display = body.style.display === 'block' ? 'none' : 'block';
+            if (body) {
+                body.style.display = body.style.display === 'block' ? 'none' : 'block';
+            }
         }
 
         function toggleCardCoupling(cardId, lectureId, newManualState) {
@@ -2258,7 +2904,10 @@
 
             if (u.status === 'completed') {
                 footer.innerHTML = `
-                    <button class="btn-action-secondary" style="flex:1;" onclick="resetUnitProgress(${u.id})">
+                    <button class="btn-action-primary" style="flex:1;" onclick="closeUnitModal()">
+                        ✓ Fertig & Schließen
+                    </button>
+                    <button class="btn-action-secondary" onclick="resetUnitProgress(${u.id})">
                         ↩️ Zurücksetzen
                     </button>
                     <button class="btn-action-secondary" style="color:var(--accent-amber);" onclick="enqueueAnkiSync(${u.id})">
@@ -2280,7 +2929,21 @@
         // ─── Time Modal & Unit Completion ───────────────────────────
         function openTimeModal(unitId) {
             pendingCompletionUnitId = unitId;
-            document.getElementById('input-completion-time').value = "45";
+            const u = queryDB("SELECT * FROM learning_units WHERE id = ?", [unitId])[0];
+            const estDur = u ? getUnitExactDuration(u) : 45;
+
+            const input = document.getElementById('input-completion-time');
+            if (input) input.value = estDur;
+
+            const pillsContainer = document.getElementById('completion-time-pills');
+            if (pillsContainer) {
+                const basePills = [15, 30, 45, 60, 90, 120];
+                const pills = basePills.includes(estDur) ? basePills : [estDur, ...basePills].sort((a,b) => a - b);
+                pillsContainer.innerHTML = pills.map(m => `
+                    <span class="filter-pill ${m === estDur ? 'active' : ''}" onclick="setCompletionMinutes(${m}, this)">${m} min</span>
+                `).join('');
+            }
+
             document.getElementById('time-modal').classList.add('active');
         }
 
@@ -2289,8 +2952,12 @@
             pendingCompletionUnitId = null;
         }
 
-        function setCompletionMinutes(m) {
+        function setCompletionMinutes(m, pillEl) {
             document.getElementById('input-completion-time').value = m;
+            if (pillEl) {
+                document.querySelectorAll('#completion-time-pills .filter-pill').forEach(p => p.classList.remove('active'));
+                pillEl.classList.add('active');
+            }
         }
 
         function getMobileAnkiSyncOptions() {
@@ -2356,11 +3023,30 @@
                 `, [unitId, aOpts.add_tag ? 1 : 0, aOpts.update_links ? 1 : 0, aOpts.unsuspend ? 1 : 0, aOpts.open_browser ? 1 : 0]);
             }
 
-            closeUnitModal();
+            // Einheit modal offen halten bzw. öffnen und direkt zu den Altfragen wechseln
+            if (activeUnitId !== unitId) {
+                openUnitModal(unitId);
+            }
+
+            const compBanner = document.getElementById('m-unit-completion-banner');
+            if (compBanner) {
+                compBanner.innerHTML = `
+                    <div style="font-weight:700; font-size:0.92rem; margin-bottom:4px;">🎉 Großartig! Lerneinheit erfolgreich abgeschlossen (${mins} min)!</div>
+                    <div style="font-size:0.8rem; opacity:0.95;">Hier sind die Altfragen dieser Vorlesung zum Festigen und Wiederholen des Wissens:</div>
+                `;
+                compBanner.style.display = 'block';
+            }
+
+            renderUnitAltfragen(unitId);
+            switchModalTab('tab-unit-cards');
+
+            const updatedU = queryDB("SELECT * FROM learning_units WHERE id = ?", [unitId])[0];
+            if (updatedU) renderUnitFooterActions(updatedU);
+
             renderDashboard();
             renderUnitsList();
             renderSyncView();
-            showToast(`🎉 Einheit abgeschlossen (${mins} min)!`);
+            showToast(`🎉 Einheit abgeschlossen (${mins} min)! Altfragen bereit.`);
         }
 
         function enqueueAnkiSync(unitId) {
@@ -2463,24 +3149,96 @@
 
             let cards = [];
             if (cardIds.length > 0) {
+                const idListStr = cardIds.join(',');
+                const crossCountsRows = queryDB(`
+                    SELECT card_id, COUNT(DISTINCT lecture_id) as lecture_count
+                    FROM card_page_matches
+                    WHERE card_id IN (${idListStr})
+                      AND ((confidence_score >= 0.40 AND (is_manual IS NULL OR is_manual != -1)) OR is_manual = 1)
+                    GROUP BY card_id
+                `);
+                const crossCountsMap = {};
+                crossCountsRows.forEach(r => crossCountsMap[r.card_id] = r.lecture_count);
+
+                const bookmarkRows = queryDB(`
+                    SELECT item_id FROM bookmarks WHERE item_type = 'anki_card' AND item_id IN (${idListStr})
+                `);
+                const bookmarkedSet = new Set(bookmarkRows.map(r => r.item_id));
+
                 const placeholders = cardIds.map(() => '?').join(',');
                 const cardRows = queryStaticDB(`
-                    SELECT id, question, answer, appearance_count, frequency_trend
+                    SELECT id, question, answer, question_raw, answer_raw, tags, year_tags, appearance_count, frequency_trend, last_year
                     FROM anki_cards
                     WHERE id IN (${placeholders})
                 `, cardIds);
                 const cardMap = {};
-                cardRows.forEach(c => cardMap[c.id] = c);
-
-                cards = matches.map(m => {
-                    const c = cardMap[m.card_id] || {};
-                    return {
+                cardRows.forEach(c => {
+                    let tags = [];
+                    let yearTags = [];
+                    try { tags = JSON.parse(c.tags || '[]'); } catch(e) {}
+                    try { yearTags = JSON.parse(c.year_tags || '[]'); } catch(e) {}
+                    cardMap[c.id] = {
                         ...c,
-                        ...m
+                        tags,
+                        year_tags: yearTags
+                    };
+                });
+
+                // Group matches by card_id
+                const cardMatchesMap = {};
+                matches.forEach(m => {
+                    if (!cardMatchesMap[m.card_id]) {
+                        cardMatchesMap[m.card_id] = {
+                            card_id: m.card_id,
+                            max_confidence: m.confidence_score || 0,
+                            is_manual: m.is_manual || 0,
+                            lecture_name: m.lecture_name,
+                            page_number: m.page_number,
+                            block_name: m.block_name,
+                            page_matches: []
+                        };
+                    }
+                    if ((m.confidence_score || 0) > cardMatchesMap[m.card_id].max_confidence) {
+                        cardMatchesMap[m.card_id].max_confidence = m.confidence_score;
+                    }
+                    if (m.is_manual === 1) cardMatchesMap[m.card_id].is_manual = 1;
+
+                    if (m.page_number && !cardMatchesMap[m.card_id].page_matches.some(p => p.page_number === m.page_number && p.lecture_id === m.lecture_id)) {
+                        cardMatchesMap[m.card_id].page_matches.push({
+                            page_number: m.page_number,
+                            confidence_score: m.confidence_score,
+                            lecture_id: m.lecture_id,
+                            lecture_filename: m.lecture_name
+                        });
+                    }
+                });
+
+                cards = cardIds.map(id => {
+                    const c = cardMap[id] || {};
+                    const m = cardMatchesMap[id] || {};
+                    return {
+                        id: id,
+                        ...c,
+                        ...m,
+                        matched_lecture_count: crossCountsMap[id] || 1,
+                        is_bookmarked: bookmarkedSet.has(id)
                     };
                 }).filter(c => c.question);
             } else if (currentCardCoupleFilter === 'all' && currentCardBlockFilter === 'all') {
-                cards = queryStaticDB("SELECT id, question, answer, appearance_count, frequency_trend FROM anki_cards LIMIT 60");
+                const rawCards = queryStaticDB("SELECT id, question, answer, question_raw, answer_raw, tags, year_tags, appearance_count, frequency_trend, last_year FROM anki_cards LIMIT 60");
+                cards = rawCards.map(c => {
+                    let tags = [];
+                    let yearTags = [];
+                    try { tags = JSON.parse(c.tags || '[]'); } catch(e) {}
+                    try { yearTags = JSON.parse(c.year_tags || '[]'); } catch(e) {}
+                    return {
+                        ...c,
+                        tags,
+                        year_tags: yearTags,
+                        matched_lecture_count: 0,
+                        is_bookmarked: false
+                    };
+                });
             }
 
             const filtered = cards.filter(c => {
@@ -2495,41 +3253,11 @@
                 return;
             }
 
+            let cardsHtml = '';
             filtered.forEach(c => {
-                const isCoupled = (c.is_manual === 1) || (c.is_manual !== -1 && c.confidence_score >= 0.55);
-                const acc = document.createElement('div');
-                acc.className = 'card-accordion';
-                acc.innerHTML = `
-                    <div class="card-acc-header" onclick="toggleAccBody(this)">
-                        <div style="flex:1; padding-right:6px;">
-                            <div style="display:flex; gap:6px; align-items:center; margin-bottom:2px;">
-                                <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">#${c.card_id || c.id}</span>
-                                ${c.block_name ? `<span class="badge" style="background:rgba(255,255,255,0.06); font-size:0.7rem;">${escapeHTML(c.block_name.split('-')[0].trim())}</span>` : ''}
-                            </div>
-                            <div style="font-size:0.88rem; font-weight:500;">${escapeHTML((c.question || '').replace(/<[^>]*>/g,'').substring(0, 85))}...</div>
-                        </div>
-                        <div style="display:flex; flex-direction:column; align-items:flex-end; gap:4px;">
-                            ${c.confidence_score !== undefined ? `<span class="badge ${isCoupled ? 'badge-completed' : 'badge-pending'}">${Math.round(c.confidence_score * 100)}%</span>` : ''}
-                        </div>
-                    </div>
-                    <div class="card-acc-body">
-                        <div style="font-weight:600; color:var(--primary); margin-bottom:4px;">Frage:</div>
-                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:10px; white-space:pre-wrap;">${escapeHTML((c.question || '').replace(/<[^>]*>/g,''))}</div>
-                        <div style="font-weight:600; color:var(--accent-teal); margin-bottom:4px;">Antwort:</div>
-                        <div style="background:rgba(0,0,0,0.25); padding:8px; border-radius:6px; margin-bottom:12px; white-space:pre-wrap;">${escapeHTML((c.answer || '').replace(/<[^>]*>/g,''))}</div>
-                        
-                        ${c.lecture_name ? `
-                        <div style="display:flex; justify-content:space-between; align-items:center; border-top:1px solid var(--border); padding-top:10px;">
-                            <span class="source-badge">📄 ${escapeHTML(c.lecture_name.replace('.pdf',''))} (S. ${c.page_number})</span>
-                            <button class="btn-couple ${isCoupled ? 'btn-couple-off' : 'btn-couple-on'}" onclick="toggleCardCoupling(${c.card_id || c.id}, ${c.lecture_id}, ${isCoupled ? -1 : 1})">
-                                ${isCoupled ? '❌ Entkoppeln' : '🔗 Koppeln'}
-                            </button>
-                        </div>
-                        ` : ''}
-                    </div>
-                `;
-                container.appendChild(acc);
+                cardsHtml += renderMobileAnkiCard(c, null);
             });
+            container.innerHTML = cardsHtml;
         }
 
         // ─── 4. Quiz Mode Logic ─────────────────────────────────────
